@@ -1,0 +1,6 @@
+@DineoAPP_HostAddress = http://localhost:5177
+
+GET {{DineoAPP_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

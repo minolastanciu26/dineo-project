@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DineoAPP")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+091b227d277ab087e2065d35eb0d00f38067ba79")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f30af758a258d2d98e4cc20e62bec630049bd2e")]
 [assembly: System.Reflection.AssemblyProductAttribute("DineoAPP")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DineoAPP")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

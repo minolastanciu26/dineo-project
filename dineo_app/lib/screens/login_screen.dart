@@ -1,6 +1,8 @@
+import 'package:dineo_app/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert'; 
 import 'package:http/http.dart' as http;
+import 'dart:io'; // Import necesar pentru Platform.isAndroid
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -125,7 +127,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       return;
                     }
 
-                    final url = Uri.parse('http://127.0.0.1:5177/api/auth/login');
+                    // --- MODIFICARE IP DINAMIC ---
+                    // Android Emulator foloseste 10.0.2.2, iOS Simulator foloseste 127.0.0.1
+                    String baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5177' : 'http://127.0.0.1:5177';
+                    final url = Uri.parse('$baseUrl/api/auth/login');
+                    // ----------------------------
 
                     try {
                       final response = await http.post(
@@ -190,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'assets/images/google_logo.png', 
                       height: 24, 
                     ),
-                    const SizedBox(width: 12), // Spațiul necesar între iconiță și text
+                    const SizedBox(width: 12), 
                     const Text(
                       "Continue with Google", 
                       style: TextStyle(color: Colors.white, fontSize: 16)
@@ -211,7 +217,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      print("Navigare către pagina de Sign Up");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SignupScreen()),
+                      );
                     },
                     child: const Text(
                       "Sign Up",
@@ -223,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 40), // Mai mult spațiu la final
+              const SizedBox(height: 40), 
             ],
           ),
         ),

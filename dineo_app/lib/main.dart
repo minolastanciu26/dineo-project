@@ -2,6 +2,7 @@ import 'package:dineo_app/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'models/restaurant.dart';
 import 'services/api_service.dart';
+import 'package:dineo_app/screens/signup_screen.dart';
 
 void main() {
   runApp(const DineoApp());

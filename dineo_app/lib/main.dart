@@ -1,8 +1,7 @@
-import 'package:dineo_app/screens/login_screen.dart';
+import 'package:dineo_app/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'models/restaurant.dart';
 import 'services/api_service.dart';
-import 'package:dineo_app/screens/signup_screen.dart';
 
 void main() {
   runApp(const DineoApp());
@@ -21,7 +20,7 @@ class DineoApp extends StatelessWidget {
         primarySwatch: Colors.orange,
         scaffoldBackgroundColor: const Color(0xFF121212),
       ),
-      home: const LoginScreen(),
+      home: const ProfileScreen(),
     );
   }
 }

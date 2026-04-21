@@ -5,7 +5,8 @@ import '../models/restaurant.dart';
 class ApiService {
   // ATENȚIE: Dacă rulezi în Chrome, folosim 'localhost'. 
   // Portul 7042 este cel din imaginea ta de la Swagger.
-  final String baseUrl = "https://localhost:7042/api";
+  // Șterge linia veche cu 7042 și pune asta:
+  final String baseUrl = "http://127.0.0.1:5177/api";
 
   Future<List<Restaurant>> getRestaurants() async {
     try {

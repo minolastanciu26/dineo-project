@@ -8,5 +8,6 @@ namespace DineoAPP.Data
         public DineoContext(DbContextOptions<DineoContext> options) : base(options) { }
 
         public DbSet<Restaurant> Restaurants { get; set; }
+        public DbSet<User> Users { get; set; }
     }
 }

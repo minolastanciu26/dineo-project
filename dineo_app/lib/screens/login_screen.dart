@@ -1,8 +1,10 @@
 import 'package:dineo_app/screens/signup_screen.dart';
+import 'package:dineo_app/screens/profile_screen.dart'; // Importă pagina de profil
 import 'package:flutter/material.dart';
 import 'dart:convert'; 
 import 'package:http/http.dart' as http;
-import 'dart:io'; // Import necesar pentru Platform.isAndroid
+import 'dart:io'; 
+import 'package:shared_preferences/shared_preferences.dart'; // Corectat calea importului
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,17 +14,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Variabilă pentru a controla vizibilitatea parolei
   bool _passwordVisible = false; 
 
-  // Controller-ele pentru a citi ce scrie utilizatorul în căsuțe
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A), // Fundalul închis din Figma
+      backgroundColor: const Color(0xFF1A1A1A),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 30),
         child: SingleChildScrollView( 
@@ -30,15 +30,8 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 80), 
-
-              // 1. Logo
-              Image.asset(
-                'assets/images/logo.png', 
-                height: 50,
-              ),
+              Image.asset('assets/images/logo.png', height: 50),
               const SizedBox(height: 50),
-              
-              // 2. Titlu
               const Text(
                 "Welcome Back!",
                 style: TextStyle(
@@ -49,12 +42,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 80),
 
-              // 3. Input Email
+              // Email Input
               TextField(
                 keyboardType: TextInputType.emailAddress, 
                 controller: _emailController,
-                autocorrect: false, 
-                enableSuggestions: false, 
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: "Email",
@@ -69,12 +60,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 4. Input Parolă
+              // Password Input
               TextField(
                 controller: _passwordController,
                 obscureText: !_passwordVisible, 
-                autocorrect: false,
-                enableSuggestions: false,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: "Password",
@@ -90,17 +79,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       _passwordVisible ? Icons.visibility : Icons.visibility_off,
                       color: Colors.grey,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _passwordVisible = !_passwordVisible;
-                      });
-                    },
+                    onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
                   ),
                 ),
               ), 
               const SizedBox(height: 50),
 
-              // 5. Buton Login
+              // Buton Login
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -109,10 +94,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     final email = _emailController.text.trim();
                     final password = _passwordController.text;
 
-                    bool emailValid = RegExp(
-                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
-                        .hasMatch(email);
-
                     if (email.isEmpty || password.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Te rugăm să completezi toate câmpurile!")),
@@ -120,18 +101,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       return;
                     }
 
-                    if (!emailValid) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Te rugăm să introduci un email valid!")),
-                      );
-                      return;
-                    }
-
-                    // --- MODIFICARE IP DINAMIC ---
-                    // Android Emulator foloseste 10.0.2.2, iOS Simulator foloseste 127.0.0.1
                     String baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5177' : 'http://127.0.0.1:5177';
                     final url = Uri.parse('$baseUrl/api/auth/login');
-                    // ----------------------------
 
                     try {
                       final response = await http.post(
@@ -145,9 +116,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       if (response.statusCode == 200) {
                         final data = jsonDecode(response.body);
-                        print("SUCCES: ${data['message']}");
+
+                        // 1. Inițializăm SharedPreferences
+                        final prefs = await SharedPreferences.getInstance();
+                        
+                        // 2. Salvăm ID-ul (verifică dacă cheia din backend e 'userId' sau 'id')
+                        await prefs.setInt('userId', data['userId'] ?? 0); 
+                        await prefs.setString('userEmail', email);
+
+                        if (!mounted) return;
+
+                        // 3. Afișăm mesaj și Navigăm
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Te-ai logat cu succes!")),
+                        );
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ProfileScreen()),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -162,59 +148,39 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFB71C1C),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
-                  child: const Text(
-                    "LOGIN", 
-                    style: TextStyle(color: Colors.white, fontSize: 18)
-                  ),
+                  child: const Text("LOGIN", style: TextStyle(color: Colors.white, fontSize: 18)),
                 ),
               ),
               const SizedBox(height: 30),
-
               const Text("- or -", style: TextStyle(color: Colors.grey, fontSize: 20)),
               const SizedBox(height: 30),
 
-              // 6. Continue with Google
+              // Google Login
               OutlinedButton(
-                onPressed: () {
-                  print("Google Login apăsat");
-                },
+                onPressed: () => print("Google Login apăsat"),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.grey),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.asset(
-                      'assets/images/google_logo.png', 
-                      height: 24, 
-                    ),
+                    Image.asset('assets/images/google_logo.png', height: 24),
                     const SizedBox(width: 12), 
-                    const Text(
-                      "Continue with Google", 
-                      style: TextStyle(color: Colors.white, fontSize: 16)
-                    ),
+                    const Text("Continue with Google", style: TextStyle(color: Colors.white, fontSize: 16)),
                   ],
                 ),
               ),
-
               const SizedBox(height: 40),
 
-              // 7. Don't have an account? Sign Up
+              // Navigare spre Sign Up
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    "Don't have an account? ",
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  const Text("Don't have an account? ", style: TextStyle(color: Colors.white)),
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -224,10 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     child: const Text(
                       "Sign Up",
-                      style: TextStyle(
-                        color: Color(0xFFB71C1C),
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: Color(0xFFB71C1C), fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

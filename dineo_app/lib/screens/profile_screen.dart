@@ -34,7 +34,7 @@ class ProfileScreen extends StatelessWidget {
                         const Text(
                           "Minola Stanciu",
                           style: TextStyle(
-                            color: Color(0xFFB71C1C),
+                            color: Color(0xFFF6F6F6),
                             fontSize: 24, // Mărit de la 22
                             fontWeight: FontWeight.bold,
                           ),

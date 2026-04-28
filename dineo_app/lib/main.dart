@@ -1,8 +1,14 @@
 import 'package:dineo_app/screens/login_screen.dart';
+import 'package:dineo_app/screens/onboarding/onboarding_screen.dart';
+import 'package:dineo_app/screens/onboarding/welcome_screen.dart';
 import 'package:dineo_app/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'models/restaurant.dart';
 import 'services/api_service.dart';
+import 'screens/onboarding/welcome_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/home/homepage_screen.dart';
+import 'screens/profile_screen.dart'; // Crează acest fișier
 
 void main() {
   runApp(const DineoApp());
@@ -14,14 +20,17 @@ class DineoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Dineo',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark, // Stilul Dark din Figma
-        primarySwatch: Colors.orange,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-      ),
-      home: const LoginScreen(),
+      title: 'DINEO',
+      // Setează pagina de start
+      initialRoute: '/', 
+      // Definirea rutelor
+      routes: {
+        '/': (context) => WelcomeScreen(), // Pagina de start
+        '/login': (context) => LoginScreen(),
+        '/home': (context) => HomepageScreen(),
+        '/profile': (context) => ProfileScreen(), // Trebuie să creezi acest fișier
+        '/map': (context) => MapViewScreen(),    // Trebuie să creezi acest fișier
+      },
     );
   }
 }

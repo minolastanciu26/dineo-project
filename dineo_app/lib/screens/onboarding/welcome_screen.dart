@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'onboarding_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
+  const WelcomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => OnboardingScreen())),
+      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OnboardingScreen())),
       child: Scaffold(
         body: Stack(
           children: [

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 class CircularMenu extends StatelessWidget {
+  const CircularMenu({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 250,
       height: 400,
       child: Stack(

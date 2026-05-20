@@ -1,12 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/restaurant.dart';
+import 'dart:io'; // <--- Added this line
 
 class ApiService {
-  // ATENȚIE: Dacă rulezi în Chrome, folosim 'localhost'. 
-  // Portul 7042 este cel din imaginea ta de la Swagger.
-  // Șterge linia veche cu 7042 și pune asta:
-  final String baseUrl = "http://127.0.0.1:5177/api";
+  // Automatically detects if it's running on Android Emulator or iOS/Mac
+  String get baseUrl {
+    if (Platform.isAndroid) {
+      return "http://10.0.2.2:5177/api"; // For Windows Android Emulator
+    } else {
+      return "http://127.0.0.1:5177/api"; // For Mac iOS Simulator / Web
+    }
+  }
 
   Future<List<Restaurant>> getRestaurants() async {
     try {

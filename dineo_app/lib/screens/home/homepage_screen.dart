@@ -3,6 +3,8 @@ import '../../widgets/circular_path_painter.dart';
 import '../../widgets/circular_menu_clipper.dart'; 
 
 class HomepageScreen extends StatelessWidget {
+  const HomepageScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -14,7 +16,7 @@ class HomepageScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Image.asset("assets/images/logo.png", height: 30),
-              IconButton(icon: Icon(Icons.person, color: Colors.red), onPressed: () => Navigator.pushNamed(context, '/profile')),
+              IconButton(icon: const Icon(Icons.person, color: Colors.red), onPressed: () => Navigator.pushNamed(context, '/profile')),
             ],
           )),
 
@@ -26,7 +28,7 @@ class HomepageScreen extends StatelessWidget {
                   clipper: SemicircleClipper(), // Clipper-ul creat anterior
                   child: Image.asset("assets/images/reward.png", height: 350, width: 200, fit: BoxFit.cover),
                 ),
-                CustomPaint(size: Size(50, 350), painter: CircularPathPainter()),
+                CustomPaint(size: const Size(50, 350), painter: CircularPathPainter()),
               ],
             ),
           ),
@@ -37,7 +39,7 @@ class HomepageScreen extends StatelessWidget {
           // View the map (Jos)
           Positioned(bottom: 50, left: 0, right: 0, child: GestureDetector(
             onTap: () => Navigator.pushNamed(context, '/map'),
-            child: Column(children: [
+            child: const Column(children: [
               Text("View the map", style: TextStyle(color: Colors.red)),
               Icon(Icons.keyboard_arrow_down, color: Colors.red),
             ]),
@@ -50,8 +52,8 @@ class HomepageScreen extends StatelessWidget {
   Widget _buildMenu() {
     final items = ["Restaurants", "Map", "Calendar", "Profile"];
     return Column(children: items.map((l) => Padding(
-      padding: EdgeInsets.symmetric(vertical: 20),
-      child: Row(children: [Text(l, style: TextStyle(color: Colors.white)), SizedBox(width: 10), Container(width: 15, height: 15, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.red, width: 2)))],),
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Row(children: [Text(l, style: const TextStyle(color: Colors.white)), const SizedBox(width: 10), Container(width: 15, height: 15, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.red, width: 2)))],),
     )).toList());
   }
 }

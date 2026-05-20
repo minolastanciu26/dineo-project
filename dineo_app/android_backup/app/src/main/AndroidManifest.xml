@@ -3,6 +3,9 @@
         android:label="dineo_app"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data 
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBmdj1rrvYFF3X9CYbSnSQBx1yt7J7DNQE"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

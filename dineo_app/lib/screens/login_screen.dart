@@ -1,5 +1,5 @@
 import 'package:dineo_app/screens/signup_screen.dart';
-import 'package:dineo_app/screens/profile_screen.dart'; // Importă pagina de profil
+// Importă pagina de profil
 import 'package:flutter/material.dart';
 import 'dart:convert'; 
 import 'package:http/http.dart' as http;

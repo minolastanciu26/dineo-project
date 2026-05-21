@@ -7,9 +7,9 @@ class ApiService {
   // Automatically detects if it's running on Android Emulator or iOS/Mac
   String get baseUrl {
     if (Platform.isAndroid) {
-      return "http://10.0.2.2:5177/api"; // For Windows Android Emulator
+      return "http//10.0.2.2:7042"; // For Windows Android Emulator
     } else {
-      return "http://127.0.0.1:5177/api"; // For Mac iOS Simulator / Web
+      return "http//127.0.0.1:7042"; // For Mac iOS Simulator / Web
     }
   }
 

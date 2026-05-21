@@ -1,10 +1,11 @@
 import 'package:dineo_app/screens/signup_screen.dart';
-import 'package:dineo_app/screens/profile_screen.dart'; // Importă pagina de profil
+// Importă pagina de profil
 import 'package:flutter/material.dart';
 import 'dart:convert'; 
 import 'package:http/http.dart' as http;
 import 'dart:io'; 
 import 'package:shared_preferences/shared_preferences.dart'; // Corectat calea importului
+import 'home/homepage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -133,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                          MaterialPageRoute(builder: (_) => HomepageScreen()),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,8 +1,32 @@
 import 'package:dineo_app/screens/login_screen.dart';
+import 'package:dineo_app/screens/personal_info_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String _fullName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      final firstName = prefs.getString('firstName') ?? '';
+      final lastName = prefs.getString('lastName') ?? '';
+      _fullName = '$firstName $lastName'.trim();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,70 +34,79 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF1A1A1A),
       body: Column(
         children: [
+          const SizedBox(height: 60),
+
+          // Header cu back + logo
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 10),
+                Image.asset('assets/images/logo.png', height: 35),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: 60),
-                  
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Image.asset('assets/images/logo.png', height: 35), // Logo ușor mai mare
-                        ),
-                        const SizedBox(height: 40),
-                        const CircleAvatar(
-                          radius: 50, // Mărit de la 45
-                          backgroundColor: Color(0xFF332020),
-                          child: Icon(Icons.person_outline, size: 55, color: Color(0xFFB71C1C)),
-                        ),
-                        const SizedBox(height: 15),
-                        const Text(
-                          "Minola Stanciu",
-                          style: TextStyle(
-                            color: Color(0xFFF6F6F6),
-                            fontSize: 24, // Mărit de la 22
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 20),
+                  const CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Color(0xFF332020),
+                    child: Icon(Icons.person_outline, size: 55, color: Color(0xFFB71C1C)),
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    _fullName.isEmpty ? 'Loading...' : _fullName,
+                    style: const TextStyle(
+                      color: Color(0xFFF6F6F6),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 30), // Redus de la 40 ca să fie mai aproape
-
-                  // 1. Containerul Roșiatic (Margine-n margine)
+                  const SizedBox(height: 30),
                   _buildSettingsGroup(
+                    context: context,
                     color: const Color(0xFF321E1E),
                     borderRadius: BorderRadius.circular(25),
                     options: [
-                      _buildProfileOption(Icons.person_outline, "Personal Info", context, () {}),
+                      _buildProfileOption(Icons.person_outline, "Personal Info", context, () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
+                        );
+                      }),
                       _buildProfileOption(Icons.favorite_border, "My Favourites", context, () {}),
                       _buildProfileOption(Icons.calendar_today_outlined, "My Calendar", context, () {}),
                       _buildProfileOption(Icons.explore_outlined, "Discovered", context, () {}),
                       _buildProfileOption(Icons.payment_outlined, "Payment Methods", context, () {}),
                     ],
                   ),
-                  const SizedBox(height: 15), // Spațiul mic dintre secțiuni cerut de tine
+                  const SizedBox(height: 15),
                 ],
               ),
             ),
           ),
 
-          // 2. Containerul Gri de Jos
           _buildSettingsGroup(
+            context: context,
             color: const Color(0xFF262626),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(25), // Mai rotunjit pentru aspect premium
+              topLeft: Radius.circular(25),
               topRight: Radius.circular(25),
             ),
             isBottom: true,
             options: [
               _buildProfileOption(Icons.logout, "Log Out", context, () => _showLogoutDialog(context)),
               _buildProfileOption(Icons.delete_outline, "Delete Account", context, () {
-                _showDeleteAccountDialog(context); // Apelează funcția de mai sus
+                _showDeleteAccountDialog(context);
               }),
             ],
           ),
@@ -83,6 +116,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildSettingsGroup({
+    required BuildContext context,
     required Color color,
     required BorderRadius borderRadius,
     required List<Widget> options,
@@ -95,8 +129,8 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: borderRadius,
       ),
       padding: EdgeInsets.only(
-        top: 15, 
-        bottom: isBottom ? 50 : 15 // Padding mai generos
+        top: 15,
+        bottom: isBottom ? MediaQuery.of(context).padding.bottom + 15 : 15,
       ),
       child: Column(children: options),
     );
@@ -104,13 +138,13 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildProfileOption(IconData icon, String title, BuildContext context, VoidCallback onTap) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 3.5), // Vertical mărește „înălțimea” rândului
-      leading: Icon(icon, color: const Color(0xFFB71C1C), size: 28), // Iconițe mai mari
+      contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 3.5),
+      leading: Icon(icon, color: const Color(0xFFB71C1C), size: 28),
       title: Text(
         title,
         style: const TextStyle(
-          color: Colors.white, 
-          fontSize: 20, // Text mult mai mare (profi)
+          color: Colors.white,
+          fontSize: 20,
           fontWeight: FontWeight.w400,
         ),
       ),
@@ -127,28 +161,24 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF262626),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("Log Out", style: TextStyle(color: Colors.white)),
-        content: const Text("Sigur vrei să ieși din contul tău?", style: TextStyle(color: Colors.grey)),
+        content: const Text("Are you sure you want to log out?", style: TextStyle(color: Colors.grey)),
         actions: [
-          // Butonul NU doar închide fereastra
           TextButton(
-            onPressed: () => Navigator.pop(context), 
-            child: const Text("NU", style: TextStyle(color: Colors.grey))
+            onPressed: () => Navigator.pop(context),
+            child: const Text("NO", style: TextStyle(color: Colors.grey)),
           ),
-          // Butonul DA te scoate de tot la Login
           TextButton(
-            onPressed: () {
-              // 1. Închidem dialogul
-              Navigator.pop(context); 
-
-              // 2. Navigăm la Login și ștergem tot istoricul de pagini (stack-ul)
-              // Importă login_screen.dart dacă îți dă eroare pe LoginScreen()
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (!mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false, // Această condiție asigură că nu mai există cale de întoarcere
+                (route) => false,
               );
-            }, 
-            child: const Text("DA", style: TextStyle(color: Color(0xFFB71C1C)))
+            },
+            child: const Text("YES", style: TextStyle(color: Color(0xFFB71C1C))),
           ),
         ],
       ),
@@ -156,54 +186,46 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: const Color(0xFF262626),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text(
-        "Delete Account", 
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-      ),
-      content: const Text(
-        "Are you sure you want to delete your account? This action is permanent and all your data will be lost.",
-        style: TextStyle(color: Colors.grey),
-      ),
-      actions: [
-        // Butonul de anulare
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("CANCEL", style: TextStyle(color: Colors.grey)),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF262626),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Delete Account",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        // Butonul de ștergere (Roșu aprins)
-        TextButton(
-          onPressed: () async {
-            // 1. Închidem dialogul
-            Navigator.pop(context);
-
-            // AICI va veni cererea de tip DELETE către Backend-ul tău (Docker)
-            // ex: http.delete(url, headers: ...)
-            
-            print("Cerere de ștergere cont trimisă către server...");
-
-            // 2. După ce serverul confirmă ștergerea, trimitem userul la Login
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
-            );
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Account deleted successfully.")),
-            );
-          },
-          child: const Text(
-            "DELETE", 
-            style: TextStyle(color: Color(0xFFB71C1C), fontWeight: FontWeight.bold)
+        content: const Text(
+          "Are you sure you want to delete your account? This action is permanent and all your data will be lost.",
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCEL", style: TextStyle(color: Colors.grey)),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Account deleted successfully.")),
+              );
+            },
+            child: const Text(
+              "DELETE",
+              style: TextStyle(color: Color(0xFFB71C1C), fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

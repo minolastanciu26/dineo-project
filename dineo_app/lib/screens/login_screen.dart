@@ -1,10 +1,9 @@
 import 'package:dineo_app/screens/signup_screen.dart';
-// Importă pagina de profil
 import 'package:flutter/material.dart';
-import 'dart:convert'; 
+import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'dart:io'; 
-import 'package:shared_preferences/shared_preferences.dart'; // Corectat calea importului
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home/homepage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,7 +14,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _passwordVisible = false; 
+  bool _passwordVisible = false;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -26,26 +25,26 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: const Color(0xFF1A1A1A),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 30),
-        child: SingleChildScrollView( 
+        child: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 80), 
+              const SizedBox(height: 80),
               Image.asset('assets/images/logo.png', height: 50),
               const SizedBox(height: 50),
               const Text(
                 "Welcome Back!",
                 style: TextStyle(
-                  color: Colors.white, 
-                  fontSize: 32, 
-                  fontWeight: FontWeight.bold
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 80),
 
               // Email Input
               TextField(
-                keyboardType: TextInputType.emailAddress, 
+                keyboardType: TextInputType.emailAddress,
                 controller: _emailController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
@@ -54,8 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   filled: true,
                   fillColor: const Color(0xFF333333),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30), 
-                    borderSide: BorderSide.none
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
                   ),
                 ),
               ),
@@ -64,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
               // Password Input
               TextField(
                 controller: _passwordController,
-                obscureText: !_passwordVisible, 
+                obscureText: !_passwordVisible,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: "Password",
@@ -83,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
                   ),
                 ),
-              ), 
+              ),
               const SizedBox(height: 50),
 
               // Buton Login
@@ -102,7 +101,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       return;
                     }
 
-                    String baseUrl = Platform.isAndroid ? 'http://10.0.2.2:5177' : 'http://127.0.0.1:5177';
+                    String baseUrl = Platform.isAndroid
+                        ? 'http://10.0.2.2:5177'
+                        : 'http://127.0.0.1:5177';
                     final url = Uri.parse('$baseUrl/api/auth/login');
 
                     try {
@@ -118,16 +119,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (response.statusCode == 200) {
                         final data = jsonDecode(response.body);
 
-                        // 1. Inițializăm SharedPreferences
                         final prefs = await SharedPreferences.getInstance();
-                        
-                        // 2. Salvăm ID-ul (verifică dacă cheia din backend e 'userId' sau 'id')
-                        await prefs.setInt('userId', data['userId'] ?? 0); 
-                        await prefs.setString('userEmail', email);
+                        await prefs.setInt('userId', data['userId'] ?? 0);
+                        await prefs.setString('userEmail', data['email'] ?? email);
+                        await prefs.setString('firstName', data['firstName'] ?? '');
+                        await prefs.setString('lastName', data['lastName'] ?? '');
+                        await prefs.setString('userPhone', data['phoneNumber'] ?? '');
 
                         if (!mounted) return;
 
-                        // 3. Afișăm mesaj și Navigăm
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Te-ai logat cu succes!")),
                         );
@@ -137,11 +137,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           MaterialPageRoute(builder: (_) => HomepageScreen()),
                         );
                       } else {
+                        if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Email sau parolă incorectă!")),
                         );
                       }
                     } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Serverul Dineo este offline.")),
                       );
@@ -160,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Google Login
               OutlinedButton(
-                onPressed: () => print("Google Login apăsat"),
+                onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.grey),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -170,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.asset('assets/images/google_logo.png', height: 24),
-                    const SizedBox(width: 12), 
+                    const SizedBox(width: 12),
                     const Text("Continue with Google", style: TextStyle(color: Colors.white, fontSize: 16)),
                   ],
                 ),
@@ -196,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 40), 
+              const SizedBox(height: 40),
             ],
           ),
         ),

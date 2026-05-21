@@ -4,6 +4,7 @@ import 'package:dineo_app/screens/login_screen.dart';
 import 'package:dineo_app/screens/home/homepage_screen.dart';
 import 'package:dineo_app/screens/profile_screen.dart';
 import 'dart:io';
+import 'package:dineo_app/screens/recommend_screen.dart';
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();

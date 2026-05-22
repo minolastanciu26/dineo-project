@@ -1,5 +1,6 @@
 import 'package:dineo_app/screens/login_screen.dart';
 import 'package:dineo_app/screens/personal_info_screen.dart';
+import 'package:dineo_app/screens/favourite_restaurants_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +13,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String _fullName = '';
+  int _userId = 0;
 
   @override
   void initState() {
@@ -25,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final firstName = prefs.getString('firstName') ?? '';
       final lastName = prefs.getString('lastName') ?? '';
       _fullName = '$firstName $lastName'.trim();
+      _userId = prefs.getInt('userId') ?? 0;
     });
   }
 
@@ -77,13 +80,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: const Color(0xFF321E1E),
                     borderRadius: BorderRadius.circular(25),
                     options: [
-                      _buildProfileOption(Icons.person_outline, "Personal Info", context, () {
-                        Navigator.push(
+                      _buildProfileOption(
+                        Icons.person_outline,
+                        "Personal Info",
+                        context,
+                        () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
-                        );
-                      }),
-                      _buildProfileOption(Icons.favorite_border, "My Favourites", context, () {}),
+                        ),
+                      ),
+                      _buildProfileOption(
+                        Icons.favorite_border,
+                        "My Favourites",
+                        context,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FavouriteRestaurantsScreen(userId: _userId),
+                          ),
+                        ),
+                      ),
                       _buildProfileOption(Icons.calendar_today_outlined, "My Calendar", context, () {}),
                       _buildProfileOption(Icons.explore_outlined, "Discovered", context, () {}),
                       _buildProfileOption(Icons.payment_outlined, "Payment Methods", context, () {}),
@@ -104,10 +120,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             isBottom: true,
             options: [
-              _buildProfileOption(Icons.logout, "Log Out", context, () => _showLogoutDialog(context)),
-              _buildProfileOption(Icons.delete_outline, "Delete Account", context, () {
-                _showDeleteAccountDialog(context);
-              }),
+              _buildProfileOption(
+                Icons.logout,
+                "Log Out",
+                context,
+                () => _showLogoutDialog(context),
+              ),
+              _buildProfileOption(
+                Icons.delete_outline,
+                "Delete Account",
+                context,
+                () => _showDeleteAccountDialog(context),
+              ),
             ],
           ),
         ],
@@ -136,7 +160,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileOption(IconData icon, String title, BuildContext context, VoidCallback onTap) {
+  Widget _buildProfileOption(
+    IconData icon,
+    String title,
+    BuildContext context,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 3.5),
       leading: Icon(icon, color: const Color(0xFFB71C1C), size: 28),
@@ -161,7 +190,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: const Color(0xFF262626),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("Log Out", style: TextStyle(color: Colors.white)),
-        content: const Text("Are you sure you want to log out?", style: TextStyle(color: Colors.grey)),
+        content: const Text(
+          "Are you sure you want to log out?",
+          style: TextStyle(color: Colors.grey),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

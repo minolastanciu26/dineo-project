@@ -65,7 +65,11 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
 
   Future<void> _loadRestaurants() async {
     try {
-      setState(() => _isLoading = true);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
 
       final all = await _apiService.getRestaurants();
       final top = await _apiService.getTopRated();
@@ -77,6 +81,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
         nearest = _sortByNearest(all, position);
       }
 
+      if (!mounted) return;
       setState(() {
         _allRestaurants = all;
         _topRated = top;
@@ -85,8 +90,9 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = "Nu mă pot conecta la server.";
+        _error = "Cannot connect to server.";
         _isLoading = false;
       });
     }
@@ -94,15 +100,21 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
 
   Future<void> _search(String query) async {
     try {
-      setState(() => _isLoading = true);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
       final results = await _apiService.getRestaurants(search: query);
+      if (!mounted) return;
       setState(() {
         _allRestaurants = results;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = "Eroare la căutare.";
+        _error = "Search error.";
         _isLoading = false;
       });
     }
@@ -232,7 +244,6 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                                 _buildHorizontalList(_allRestaurants),
                                 const SizedBox(height: 20),
                               ] else ...[
-                                // Search results
                                 ..._allRestaurants.map(
                                   (r) => _buildRestaurantCard(r, horizontal: false),
                                 ),

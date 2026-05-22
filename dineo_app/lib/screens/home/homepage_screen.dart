@@ -1,9 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import '../../widgets/ai_chat_button.dart';
 
-class HomepageScreen extends StatelessWidget {
+class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
+
+  @override
+  State<HomepageScreen> createState() => _HomepageScreenState();
+}
+
+class _HomepageScreenState extends State<HomepageScreen> {
+  String _firstName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _firstName = prefs.getString('firstName') ?? '';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +65,7 @@ class HomepageScreen extends StatelessWidget {
                   children: [
                     Image.asset("assets/images/logo.png", height: 28),
                     GestureDetector(
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/profile'),
+                      onTap: () => Navigator.pushNamed(context, '/profile'),
                       child: Container(
                         width: 38,
                         height: 38,
@@ -67,18 +89,18 @@ class HomepageScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      "Hi, Minola!",
-                      style: TextStyle(
+                      _firstName.isEmpty ? "Hi there!" : "Hi, $_firstName!",
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
+                    const SizedBox(height: 4),
+                    const Text(
                       "Where are you dining tonight?",
                       style: TextStyle(
                         color: Color(0xFF888888),
@@ -98,26 +120,22 @@ class HomepageScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A1A),
                     borderRadius: BorderRadius.circular(30),
-                    border:
-                        Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
                   ),
                   child: Row(
                     children: [
                       const SizedBox(width: 18),
-                      const Icon(Icons.search,
-                          color: Color(0xFF666666), size: 18),
+                      const Icon(Icons.search, color: Color(0xFF666666), size: 18),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
                           "Search restaurants",
-                          style: TextStyle(
-                              color: Color(0xFF555555), fontSize: 14),
+                          style: TextStyle(color: Color(0xFF555555), fontSize: 14),
                         ),
                       ),
                       Container(
                         margin: const EdgeInsets.all(6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFFB71C1C),
                           borderRadius: BorderRadius.circular(20),
@@ -142,9 +160,8 @@ class HomepageScreen extends StatelessWidget {
                     final areaW = constraints.maxWidth;
                     final areaH = constraints.maxHeight;
 
-                    // All circle math as percentages
                     final double R = areaW * 0.52;
-                    final double arcR = R * 1.12; // outer arc is bigger
+                    final double arcR = R * 1.12;
                     final double cx = areaW * 0.02;
                     final double cy = areaH * 0.42;
 
@@ -160,7 +177,6 @@ class HomepageScreen extends StatelessWidget {
                             height: R * 2,
                             child: Stack(
                               children: [
-                                // Circular clipped image
                                 ClipOval(
                                   child: Image.asset(
                                     "assets/images/reward.png",
@@ -169,7 +185,6 @@ class HomepageScreen extends StatelessWidget {
                                     fit: BoxFit.cover,
                                   ),
                                 ),
-                                // Fade left side into background
                                 Positioned.fill(
                                   child: DecoratedBox(
                                     decoration: BoxDecoration(
@@ -180,30 +195,28 @@ class HomepageScreen extends StatelessWidget {
                                         stops: const [0.35, 1.0],
                                         colors: [
                                           Colors.transparent,
-                                          const Color(0xFF0F0F0F)
-                                              .withOpacity(0.95),
+                                          const Color(0xFF0F0F0F).withOpacity(0.95),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ),
-                                // View monthly rewards
                               ],
                             ),
                           ),
                         ),
 
-                        // Arc line drawn from circle center
-                       Positioned(
-                        left: cx - arcR,
-                        top: cy - arcR,
-                        child: CustomPaint(
-                          size: Size(arcR * 2, arcR * 2),
-                          painter: _ArcPainter(radius: arcR),
+                        // Arc line
+                        Positioned(
+                          left: cx - arcR,
+                          top: cy - arcR,
+                          child: CustomPaint(
+                            size: Size(arcR * 2, arcR * 2),
+                            painter: _ArcPainter(radius: arcR),
+                          ),
                         ),
-                      ),
 
-                        // Menu items on the arc
+                        // Menu items
                         ..._menuItems(context, cx, cy, arcR),
 
                         // View the map
@@ -212,15 +225,13 @@ class HomepageScreen extends StatelessWidget {
                           left: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/map'),
-                            child: Column(
-                              children: const [
+                            onTap: () => Navigator.pushNamed(context, '/map'),
+                            child: const Column(
+                              children: [
                                 Text(
                                   "View the map",
                                   style: TextStyle(
-                                      color: Color(0xFFB71C1C),
-                                      fontSize: 13),
+                                      color: Color(0xFFB71C1C), fontSize: 13),
                                 ),
                                 SizedBox(height: 2),
                                 Icon(Icons.keyboard_arrow_down,
@@ -250,7 +261,6 @@ class HomepageScreen extends StatelessWidget {
 
   List<Widget> _menuItems(
       BuildContext context, double cx, double cy, double R) {
-    // Angles in degrees — right side of circle
     final items = [
       {"label": "Restaurants", "route": "/restaurants", "angle": -52.0},
       {"label": "Map", "route": "/map", "angle": -18.0},
@@ -260,7 +270,6 @@ class HomepageScreen extends StatelessWidget {
 
     return items.map((item) {
       final angle = (item["angle"] as double) * math.pi / 180;
-      // Position of dot on the arc
       final dx = cx + R * math.cos(angle);
       final dy = cy + R * math.sin(angle);
 
@@ -268,21 +277,17 @@ class HomepageScreen extends StatelessWidget {
         left: dx - 9,
         top: dy - 9,
         child: GestureDetector(
-          onTap: () =>
-              Navigator.pushNamed(context, item["route"] as String),
+          onTap: () => Navigator.pushNamed(context, item["route"] as String),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Dot
-             // Dot
               Container(
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: const Color(0xFF0F0F0F),
-                  border: Border.all(
-                      color: const Color(0xFFB71C1C), width: 2.5),
+                  border: Border.all(color: const Color(0xFFB71C1C), width: 2.5),
                 ),
               ),
               const SizedBox(width: 12),
@@ -303,7 +308,6 @@ class HomepageScreen extends StatelessWidget {
   }
 }
 
-// Draws only the visible right arc
 class _ArcPainter extends CustomPainter {
   final double radius;
   const _ArcPainter({required this.radius});
@@ -317,11 +321,10 @@ class _ArcPainter extends CustomPainter {
 
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Draw only the right portion of the circle (visible arc)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -math.pi * 0.72,  // start angle (upper right)
-      math.pi * 1.44,   // sweep (right side only)
+      -math.pi * 0.72,
+      math.pi * 1.44,
       false,
       paint,
     );
@@ -333,6 +336,7 @@ class _ArcPainter extends CustomPainter {
 
 class MapViewScreen extends StatelessWidget {
   const MapViewScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

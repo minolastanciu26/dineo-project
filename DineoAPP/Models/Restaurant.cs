@@ -8,11 +8,15 @@
         public string? CuisineType { get; set; }
         public double Rating { get; set; }
         public string? Address { get; set; }
-        public double? Latitude { get; set; }
-        public double? Longitude { get; set; }
-        public string? PhoneNumber { get; set; }
         public string? ImageUrl { get; set; }
+        public string? PhoneNumber { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public List<MenuCategory>? MenuCategories { get; set; }
+
+        // Navigation properties
+        public ICollection<MenuCategory> MenuCategories { get; set; } = new List<MenuCategory>();
+        public ICollection<Table> Tables { get; set; } = new List<Table>();
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

@@ -1,3 +1,30 @@
+import 'menu_item.dart';
+
+class MenuCategory {
+  final int id;
+  final int restaurantId;
+  final String name;
+  final List<MenuItem> menuItems;
+
+  MenuCategory({
+    required this.id,
+    required this.restaurantId,
+    required this.name,
+    required this.menuItems,
+  });
+
+  factory MenuCategory.fromJson(Map<String, dynamic> json) {
+    return MenuCategory(
+      id: json['id'],
+      restaurantId: json['restaurantId'],
+      name: json['name'] ?? '',
+      menuItems: json['menuItems'] != null
+          ? (json['menuItems'] as List).map((i) => MenuItem.fromJson(i)).toList()
+          : [],
+    );
+  }
+}
+
 class Restaurant {
   final int id;
   final String name;
@@ -9,6 +36,7 @@ class Restaurant {
   final String? phoneNumber;
   final double? latitude;
   final double? longitude;
+  final List<MenuCategory> menuCategories;
 
   Restaurant({
     required this.id,
@@ -21,6 +49,7 @@ class Restaurant {
     this.phoneNumber,
     this.latitude,
     this.longitude,
+    this.menuCategories = const [],
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -35,6 +64,11 @@ class Restaurant {
       phoneNumber: json['phoneNumber'],
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
+      menuCategories: json['menuCategories'] != null
+          ? (json['menuCategories'] as List)
+              .map((c) => MenuCategory.fromJson(c))
+              .toList()
+          : [],
     );
   }
 }

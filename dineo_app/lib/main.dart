@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:dineo_app/screens/onboarding/welcome_screen.dart';
 import 'package:dineo_app/screens/login_screen.dart';
 import 'package:dineo_app/screens/home/homepage_screen.dart';
 import 'package:dineo_app/screens/profile_screen.dart';
-import 'dart:io';
-import 'package:dineo_app/screens/recommend_screen.dart';
 import 'package:dineo_app/screens/restaurants_screen.dart';
+import 'package:dineo_app/screens/map_screen.dart';
+import 'dart:io';
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
@@ -28,13 +29,18 @@ class DineoApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'DINEO',
-      initialRoute: '/home',
+      theme: ThemeData(
+        textTheme: GoogleFonts.montserratTextTheme(
+          ThemeData.dark().textTheme,
+        ),
+      ),
+      initialRoute: '/',
       routes: {
         '/': (context) => WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => HomepageScreen(),
         '/profile': (context) => const ProfileScreen(),
-        '/map': (context) => const MapViewScreen(),
+        '/map': (context) => const MapScreen(),
         '/restaurants': (context) => const RestaurantsScreen(),
       },
     );

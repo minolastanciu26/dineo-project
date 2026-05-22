@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../widgets/ai_chat_button.dart';
+import 'package:dineo_app/screens/map_screen.dart';
 
 class HomepageScreen extends StatelessWidget {
   const HomepageScreen({super.key});
@@ -212,8 +213,26 @@ class HomepageScreen extends StatelessWidget {
                           left: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/map'),
+                            onTap: () => Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder: (context, animation, secondaryAnimation) =>
+                                    const MapScreen(),
+                                transitionsBuilder:
+                                    (context, animation, secondaryAnimation, child) {
+                                  final slide = Tween<Offset>(
+                                    begin: const Offset(0, 1), // comes from bottom
+                                    end: Offset.zero,
+                                  ).animate(CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeOutCubic,
+                                  ));
+                                  return SlideTransition(position: slide, child: child);
+                                },
+                                transitionDuration: const Duration(milliseconds: 400),
+                                reverseTransitionDuration: const Duration(milliseconds: 350),
+                              ),
+                            ),
                             child: Column(
                               children: const [
                                 Text(

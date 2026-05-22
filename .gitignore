@@ -4,3 +4,8 @@ DineoAPP/bin/
 DineoAPP/obj/
 dineo_app/build/
 dineo_app/.dart_tool/
+
+# Flutter generated files
+dineo_app/macos/Flutter/GeneratedPluginRegistrant.swift
+dineo_app/windows/flutter/generated_plugin_registrant.cc
+dineo_app/windows/flutter/generated_plugins.cmake

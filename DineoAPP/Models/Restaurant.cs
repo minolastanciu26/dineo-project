@@ -13,5 +13,6 @@
         public string? PhoneNumber { get; set; }
         public string? ImageUrl { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public List<MenuCategory>? MenuCategories { get; set; }
     }
 }

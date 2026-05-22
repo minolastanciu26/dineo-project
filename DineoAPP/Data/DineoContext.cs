@@ -25,24 +25,26 @@ namespace DineoAPP.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // User
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
-            // Restaurant
             modelBuilder.Entity<Restaurant>()
                 .Property(r => r.Rating)
                 .HasDefaultValue(0.0);
 
-            // Table
+            modelBuilder.Entity<Restaurant>()
+                .HasMany(r => r.MenuCategories)
+                .WithOne(c => c.Restaurant)
+                .HasForeignKey(c => c.RestaurantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Table>()
                 .HasOne(t => t.Restaurant)
                 .WithMany()
                 .HasForeignKey(t => t.RestaurantId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Reservation
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.User)
                 .WithMany()
@@ -61,17 +63,15 @@ namespace DineoAPP.Data
                 .HasForeignKey(r => r.TableId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            // MenuCategory
             modelBuilder.Entity<MenuCategory>()
                 .HasOne(mc => mc.Restaurant)
-                .WithMany()
+                .WithMany(r => r.MenuCategories)
                 .HasForeignKey(mc => mc.RestaurantId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // MenuItem
             modelBuilder.Entity<MenuItem>()
                 .HasOne(mi => mi.Category)
-                .WithMany()
+                .WithMany(c => c.MenuItems)
                 .HasForeignKey(mi => mi.CategoryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -79,7 +79,6 @@ namespace DineoAPP.Data
                 .Property(mi => mi.Price)
                 .HasColumnType("decimal(10,2)");
 
-            // Order
             modelBuilder.Entity<Order>()
                 .HasOne(o => o.User)
                 .WithMany()
@@ -96,7 +95,6 @@ namespace DineoAPP.Data
                 .Property(o => o.TotalPrice)
                 .HasColumnType("decimal(10,2)");
 
-            // OrderItem
             modelBuilder.Entity<OrderItem>()
                 .HasOne(oi => oi.Order)
                 .WithMany()
@@ -113,7 +111,6 @@ namespace DineoAPP.Data
                 .Property(oi => oi.Price)
                 .HasColumnType("decimal(10,2)");
 
-            // Review
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
                 .WithMany()
@@ -126,7 +123,6 @@ namespace DineoAPP.Data
                 .HasForeignKey(r => r.RestaurantId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            // Favourite
             modelBuilder.Entity<Favourite>()
                 .HasOne(f => f.User)
                 .WithMany()
@@ -139,7 +135,6 @@ namespace DineoAPP.Data
                 .HasForeignKey(f => f.RestaurantId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            // FavouriteItem
             modelBuilder.Entity<FavouriteItem>()
                 .HasOne(fi => fi.User)
                 .WithMany()
@@ -152,14 +147,12 @@ namespace DineoAPP.Data
                 .HasForeignKey(fi => fi.MenuItemId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            // MonthlyOffer
             modelBuilder.Entity<MonthlyOffer>()
                 .HasOne(mo => mo.Restaurant)
                 .WithMany()
                 .HasForeignKey(mo => mo.RestaurantId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // UserMonthlyOffer
             modelBuilder.Entity<UserMonthlyOffer>()
                 .HasOne(umo => umo.User)
                 .WithMany()
@@ -172,14 +165,12 @@ namespace DineoAPP.Data
                 .HasForeignKey(umo => umo.MonthlyOfferId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            // Notification
             modelBuilder.Entity<Notification>()
                 .HasOne(n => n.User)
                 .WithMany()
                 .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // DiscoveredRestaurant
             modelBuilder.Entity<DiscoveredRestaurant>()
                 .HasOne(dr => dr.User)
                 .WithMany()

@@ -5,6 +5,7 @@ import 'package:dineo_app/screens/home/homepage_screen.dart';
 import 'package:dineo_app/screens/profile_screen.dart';
 import 'dart:io';
 import 'package:dineo_app/screens/recommend_screen.dart';
+import 'package:dineo_app/screens/restaurants_screen.dart';
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
@@ -27,13 +28,14 @@ class DineoApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'DINEO',
-      initialRoute: '/',
+      initialRoute: '/home',
       routes: {
         '/': (context) => WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => HomepageScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/map': (context) => const MapViewScreen(),
+        '/restaurants': (context) => const RestaurantsScreen(),
       },
     );
   }

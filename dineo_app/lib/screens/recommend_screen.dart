@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class RecommendScreen extends StatefulWidget {
   final bool isEmbedded;
@@ -10,6 +11,7 @@ class RecommendScreen extends StatefulWidget {
 
 class _RecommendScreenState extends State<RecommendScreen> {
   final TextEditingController _controller = TextEditingController();
+  final ApiService _apiService = ApiService();
   bool _isLoading = false;
   String _result = '';
 
@@ -21,14 +23,20 @@ class _RecommendScreenState extends State<RecommendScreen> {
       _result = '';
     });
 
-    // TODO: call ApiService here in Step 5
-    // For now, simulate a response
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      _isLoading = false;
-      _result = "AI recommendation will appear here once the backend is connected.";
-    });
+    try {
+      final recommendation = await _apiService.getRecommendation(
+        _controller.text.trim(),
+      );
+      setState(() {
+        _isLoading = false;
+        _result = recommendation;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _result = "Could not get recommendation. Please try again.";
+      });
+    }
   }
 
   @override
@@ -38,9 +46,9 @@ class _RecommendScreenState extends State<RecommendScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "What are you looking for tonight?",
-            style: TextStyle(
+          Text(
+            _getGreeting(),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -120,10 +128,8 @@ class _RecommendScreenState extends State<RecommendScreen> {
       ),
     );
 
-    // When used inside the bottom sheet, skip the Scaffold
     if (widget.isEmbedded) return content;
 
-    // When opened as a standalone screen
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
@@ -140,5 +146,20 @@ class _RecommendScreenState extends State<RecommendScreen> {
       ),
       body: content,
     );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return "What are you looking for this morning?";
+    } else if (hour >= 12 && hour < 15) {
+      return "What are you looking for lunch?";
+    } else if (hour >= 15 && hour < 18) {
+      return "What are you looking for this afternoon?";
+    } else if (hour >= 18 && hour < 22) {
+      return "What are you looking for tonight?";
+    } else {
+      return "What are you looking for?";
+    }
   }
 }

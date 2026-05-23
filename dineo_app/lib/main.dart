@@ -34,7 +34,7 @@ class DineoApp extends StatelessWidget {
           ThemeData.dark().textTheme,
         ),
       ),
-      initialRoute: '/',
+      initialRoute: '/home', 
       routes: {
         '/': (context) => WelcomeScreen(),
         '/login': (context) => const LoginScreen(),

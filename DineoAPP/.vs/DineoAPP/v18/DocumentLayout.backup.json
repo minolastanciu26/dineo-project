@@ -3,24 +3,24 @@
   "WorkspaceRootPath": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\dineoapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|solutionrelative:dineoapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\controllers\\restaurantscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|solutionrelative:controllers\\restaurantscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\dineoapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|solutionrelative:dineoapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\data\\dineocontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|solutionrelative:data\\dineocontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E5ADDEA2-7E75-4471-9147-0C835B593E42}|DineoAPP.csproj|c:\\users\\minola\\desktop\\licenta\\dineo-project\\dineoapp\\models\\restaurant.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -34,7 +34,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -42,7 +42,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
               "Title": "DineoAPP.csproj",
               "DocumentMoniker": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\DineoAPP.csproj",
               "RelativeDocumentMoniker": "DineoAPP.csproj",
@@ -55,7 +55,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 1,
               "Title": "RestaurantsController.cs",
               "DocumentMoniker": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\Controllers\\RestaurantsController.cs",
               "RelativeDocumentMoniker": "Controllers\\RestaurantsController.cs",
@@ -63,35 +63,38 @@
               "RelativeToolTip": "Controllers\\RestaurantsController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-28T21:48:18.359Z"
+              "WhenOpened": "2026-04-28T21:48:18.359Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAABIAAAAAAAAAAAAAACcAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-28T21:48:18.359Z"
+              "WhenOpened": "2026-04-28T21:48:18.359Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
               "ToolTip": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\appsettings.json",
               "RelativeToolTip": "appsettings.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAB+AAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-04-28T21:48:18.391Z"
+              "WhenOpened": "2026-04-28T21:48:18.391Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 3,
               "Title": "DineoContext.cs",
               "DocumentMoniker": "C:\\Users\\Minola\\Desktop\\Licenta\\dineo-project\\DineoAPP\\Data\\DineoContext.cs",
               "RelativeDocumentMoniker": "Data\\DineoContext.cs",
@@ -99,7 +102,8 @@
               "RelativeToolTip": "Data\\DineoContext.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-28T21:48:18.391Z"
+              "WhenOpened": "2026-04-28T21:48:18.391Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",

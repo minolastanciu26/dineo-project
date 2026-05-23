@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import '../../widgets/ai_chat_button.dart';
+import '../my_reservations_screen.dart';
 
 class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
@@ -28,6 +29,21 @@ class _HomepageScreenState extends State<HomepageScreen> {
     }
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return "Where are you having breakfast?";
+    } else if (hour >= 12 && hour < 15) {
+      return "Where are you having lunch?";
+    } else if (hour >= 15 && hour < 18) {
+      return "Where are you going this afternoon?";
+    } else if (hour >= 18 && hour < 22) {
+      return "Where are you dining tonight?";
+    } else {
+      return "Looking for a late night spot?";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -42,10 +58,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
                 gradient: RadialGradient(
                   center: Alignment(-0.8, 0.2),
                   radius: 0.8,
-                  colors: [
-                    Color(0xFF2A0A0A),
-                    Color(0xFF0F0F0F),
-                  ],
+                  colors: [Color(0xFF2A0A0A), Color(0xFF0F0F0F)],
                 ),
               ),
             ),
@@ -69,12 +82,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
                         height: 38,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                              color: const Color(0xFFB71C1C), width: 1.5),
+                          border: Border.all(color: const Color(0xFFB71C1C), width: 1.5),
                           color: const Color(0xFF1E1E1E),
                         ),
-                        child: const Icon(Icons.person,
-                            color: Color(0xFFB71C1C), size: 20),
+                        child: const Icon(Icons.person, color: Color(0xFFB71C1C), size: 20),
                       ),
                     ),
                   ],
@@ -97,12 +108,9 @@ class _HomepageScreenState extends State<HomepageScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      "Where are you dining tonight?",
-                      style: TextStyle(
-                        color: Color(0xFF888888),
-                        fontSize: 14,
-                      ),
+                    Text(
+                      _getGreeting(),
+                      style: const TextStyle(color: Color(0xFF888888), fontSize: 14),
                     ),
                   ],
                 ),
@@ -139,9 +147,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
                         child: const Text(
                           "Filter",
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -154,7 +163,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
                   builder: (context, constraints) {
                     final areaW = constraints.maxWidth;
                     final areaH = constraints.maxHeight;
-
                     final double R = areaW * 0.52;
                     final double arcR = R * 1.12;
                     final double cx = areaW * 0.02;
@@ -221,8 +229,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
                               children: [
                                 Text(
                                   "View the map",
-                                  style: TextStyle(
-                                      color: Color(0xFFB71C1C), fontSize: 13),
+                                  style: TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
                                 ),
                                 SizedBox(height: 2),
                                 Icon(Icons.keyboard_arrow_down,
@@ -249,8 +256,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
     );
   }
 
-  List<Widget> _menuItems(
-      BuildContext context, double cx, double cy, double R) {
+  List<Widget> _menuItems(BuildContext context, double cx, double cy, double R) {
     final items = [
       {"label": "Restaurants", "route": "/restaurants", "angle": -52.0},
       {"label": "Map", "route": "/map", "angle": -18.0},
@@ -267,7 +273,16 @@ class _HomepageScreenState extends State<HomepageScreen> {
         left: dx - 9,
         top: dy - 9,
         child: GestureDetector(
-          onTap: () => Navigator.pushNamed(context, item["route"] as String),
+          onTap: () {
+            if (item["label"] == "Calendar") {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
+              );
+            } else {
+              Navigator.pushNamed(context, item["route"] as String);
+            }
+          },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

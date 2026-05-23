@@ -68,7 +68,7 @@ If nothing matches well, suggest the closest options and explain why.";
 
             // Call Gemini API
             var apiKey = _configuration["GeminiApiKey"];
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
+            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
 
             var requestBody = new
             {

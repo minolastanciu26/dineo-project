@@ -1,6 +1,7 @@
 import 'package:dineo_app/screens/login_screen.dart';
 import 'package:dineo_app/screens/personal_info_screen.dart';
 import 'package:dineo_app/screens/favourite_restaurants_screen.dart';
+import 'package:dineo_app/screens/my_reservations_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,8 +39,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Column(
         children: [
           const SizedBox(height: 60),
-
-          // Header cu back + logo
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -100,7 +99,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
-                      _buildProfileOption(Icons.calendar_today_outlined, "My Calendar", context, () {}),
+                      _buildProfileOption(
+                        Icons.calendar_today_outlined,
+                        "My Calendar",
+                        context,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
+                        ),
+                      ),
                       _buildProfileOption(Icons.explore_outlined, "Discovered", context, () {}),
                       _buildProfileOption(Icons.payment_outlined, "Payment Methods", context, () {}),
                     ],
@@ -148,10 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: borderRadius,
-      ),
+      decoration: BoxDecoration(color: color, borderRadius: borderRadius),
       padding: EdgeInsets.only(
         top: 15,
         bottom: isBottom ? MediaQuery.of(context).padding.bottom + 15 : 15,

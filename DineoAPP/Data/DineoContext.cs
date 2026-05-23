@@ -41,7 +41,7 @@ namespace DineoAPP.Data
 
             modelBuilder.Entity<Table>()
                 .HasOne(t => t.Restaurant)
-                .WithMany()
+                .WithMany(r => r.Tables)
                 .HasForeignKey(t => t.RestaurantId)
                 .OnDelete(DeleteBehavior.Cascade);
 

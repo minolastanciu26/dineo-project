@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+dineo_app/linux/flutter/generated_plugin_registrant.cc
+dineo_app/linux/flutter/generated_plugins.cmake

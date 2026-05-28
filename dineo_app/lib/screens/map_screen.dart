@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../models/restaurant.dart';
+import '../services/api_service.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final double? targetLat;
+  final double? targetLng;
+  final String? targetName;
+  final int? targetRestaurantId;
+
+  const MapScreen({
+    super.key,
+    this.targetLat,
+    this.targetLng,
+    this.targetName,
+    this.targetRestaurantId,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -10,116 +23,112 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
-  double _currentZoom = 13.5;
-
-  final List<Map<String, dynamic>> _restaurants = [
-    {
-      "id": 1,
-      "name": "La Grande Bellezza",
-      "cuisineType": "Italian",
-      "rating": 4.8,
-      "description": "Don Stefano loves life. For him, life is a combination of amore, good food, the coldest drinks and the best company. This is la grande bellezza della vita.",
-      "lat": 44.4396,
-      "lng": 26.0963,
-    },
-    {
-      "id": 2,
-      "name": "Caru' cu Bere",
-      "cuisineType": "Romanian",
-      "rating": 4.6,
-      "description": "A historic brewery restaurant in the heart of Bucharest, famous for its stunning neo-gothic architecture and traditional Romanian cuisine since 1879.",
-      "lat": 44.4309,
-      "lng": 26.0979,
-    },
-    {
-      "id": 3,
-      "name": "Vatra",
-      "cuisineType": "Romanian",
-      "rating": 4.5,
-      "description": "A cozy hearth-inspired restaurant serving traditional Romanian dishes with a modern twist. Perfect for family gatherings and romantic evenings alike.",
-      "lat": 44.4478,
-      "lng": 26.0800,
-    },
-    {
-      "id": 4,
-      "name": "Shift",
-      "cuisineType": "International",
-      "rating": 4.3,
-      "description": "A vibrant international fusion restaurant where culinary traditions from around the world meet. Creative cocktails and an ever-changing seasonal menu.",
-      "lat": 44.4412,
-      "lng": 26.1020,
-    },
-    {
-      "id": 5,
-      "name": "Lacrimi si Sfinti",
-      "cuisineType": "Romanian Fusion",
-      "rating": 4.7,
-      "description": "An avant-garde Romanian fusion restaurant pushing the boundaries of local cuisine. Chef Joseph Hadad reimagines classic dishes with international techniques.",
-      "lat": 44.4350,
-      "lng": 26.0890,
-    },
-  ];
-
-  Map<String, dynamic>? _selectedRestaurant;
+  final ApiService _apiService = ApiService();
   Set<Marker> _markers = {};
+  List<Restaurant> _restaurants = [];
+  Restaurant? _selectedRestaurant;
+  bool _isLoading = true;
 
-  static const LatLng _bucharestCenter = LatLng(44.4396, 26.0963);
-  static const double _labelZoomThreshold = 15.5;
-
-  // Draggable sheet controller
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
 
-  // Snap sizes as fraction of screen height
-  static const double _collapsedSize = 0.22;
-  static const double _expandedSize = 0.32;
+  static const double _collapsedSize = 0.25;
+  static const double _expandedSize = 0.55;
+
+  static const LatLng _bucharestCenter = LatLng(44.4268, 26.1025);
 
   @override
   void initState() {
     super.initState();
-    _buildMarkers();
+    _loadRestaurants();
   }
 
-  @override
-  void dispose() {
-    _sheetController.dispose();
-    super.dispose();
-  }
+  Future<void> _loadRestaurants() async {
+    try {
+      final restaurants = await _apiService.getRestaurants();
+      setState(() {
+        _restaurants = restaurants
+            .where((r) => r.latitude != null && r.longitude != null)
+            .toList();
+        _isLoading = false;
+      });
+      await _buildMarkers();
 
-  void _buildMarkers() {
-    final bool showLabels = _currentZoom >= _labelZoomThreshold;
+      if (widget.targetRestaurantId != null) {
+        final targets = _restaurants.where(
+          (r) => r.id == widget.targetRestaurantId,
+        ).toList();
 
-    final markers = _restaurants.map((r) {
-      return Marker(
-        markerId: MarkerId(r["id"].toString()),
-        position: LatLng(r["lat"], r["lng"]),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: showLabels
-            ? InfoWindow(title: r["name"], snippet: r["cuisineType"])
-            : InfoWindow.noText,
-        alpha: showLabels ? 0.0 : 1.0,
-        onTap: () {
-          setState(() {
-            _selectedRestaurant = r;
+        if (targets.isNotEmpty) {
+          final target = targets.first;
+          setState(() => _selectedRestaurant = target);
+          await _buildMarkers();
+
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await Future.delayed(const Duration(milliseconds: 500));
+            _mapController?.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: LatLng(target.latitude!, target.longitude!),
+                  zoom: 16,
+                  tilt: 0,
+                ),
+              ),
+            );
+            _sheetController.animateTo(
+              _expandedSize,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
           });
-        },
-      );
-    }).toSet();
-
-    setState(() {
-      _markers = markers;
-    });
+        }
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _onCameraMove(CameraPosition position) {
-    final newZoom = position.zoom;
-    if ((newZoom >= _labelZoomThreshold) !=
-        (_currentZoom >= _labelZoomThreshold)) {
-      _currentZoom = newZoom;
-      _buildMarkers();
-    } else {
-      _currentZoom = newZoom;
+  Future<void> _buildMarkers() async {
+    final Set<Marker> markers = {};
+
+    for (final r in _restaurants) {
+      if (r.latitude == null || r.longitude == null) continue;
+
+      final isSelected = _selectedRestaurant?.id == r.id;
+
+      markers.add(
+        Marker(
+          markerId: MarkerId(r.id.toString()),
+          position: LatLng(r.latitude!, r.longitude!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            isSelected
+                ? BitmapDescriptor.hueRed
+                : BitmapDescriptor.hueOrange,
+          ),
+          infoWindow: InfoWindow(
+            title: r.name,
+            snippet: r.cuisineType,
+          ),
+          onTap: () {
+            setState(() => _selectedRestaurant = r);
+            _buildMarkers();
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLngZoom(
+                LatLng(r.latitude!, r.longitude!),
+                16,
+              ),
+            );
+            _sheetController.animateTo(
+              _expandedSize,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          },
+        ),
+      );
     }
+
+    if (mounted) setState(() => _markers = markers);
   }
 
   @override
@@ -128,34 +137,39 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: const Color(0xFF0F0F0F),
       body: Stack(
         children: [
-          // Full screen map behind everything
+          // Full screen map
           Positioned.fill(
             child: GoogleMap(
-              initialCameraPosition: const CameraPosition(
-                target: _bucharestCenter,
-                zoom: 13.5,
+              initialCameraPosition: CameraPosition(
+                target: widget.targetLat != null
+                    ? LatLng(widget.targetLat!, widget.targetLng!)
+                    : _bucharestCenter,
+                zoom: widget.targetLat != null ? 16 : 13.5,
               ),
               markers: _markers,
               onMapCreated: (controller) {
                 _mapController = controller;
                 _mapController!.setMapStyle(_darkMapStyle);
               },
-              onCameraMove: _onCameraMove,
               onTap: (_) {
-                setState(() {
-                  _selectedRestaurant = null;
-                });
+                setState(() => _selectedRestaurant = null);
+                _buildMarkers();
+                _sheetController.animateTo(
+                  _collapsedSize,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
               },
               myLocationButtonEnabled: false,
               zoomControlsEnabled: false,
               zoomGesturesEnabled: true,
               scrollGesturesEnabled: true,
               rotateGesturesEnabled: true,
-              tiltGesturesEnabled: true,
+              tiltGesturesEnabled: false,
             ),
           ),
 
-          // Draggable bottom sheet
+          // Bottom sheet
           DraggableScrollableSheet(
             controller: _sheetController,
             initialChildSize: _collapsedSize,
@@ -185,8 +199,8 @@ class _MapScreenState extends State<MapScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF0F0F0F),
-                    const Color(0xFF0F0F0F).withOpacity(0),
+                    Colors.black.withOpacity(0.7),
+                    Colors.transparent,
                   ],
                 ),
               ),
@@ -198,149 +212,160 @@ class _MapScreenState extends State<MapScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A).withOpacity(0.9),
+                        color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.1)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.arrow_back,
-                          color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.black,
+                        size: 20,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    "Restaurants near you",
-                    style: TextStyle(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
                       color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on,
+                            color: Color(0xFFB71C1C), size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          "${_restaurants.length} restaurants",
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
           ),
-
-          // Restaurant count badge
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 60,
-            left: 16,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFB71C1C),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                "${_restaurants.length} restaurants",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-
-          // Selected restaurant popup
-          if (_selectedRestaurant != null)
-            Positioned(
-              bottom: MediaQuery.of(context).size.height * _collapsedSize + 16,
-              left: 16,
-              right: 16,
-              child: _buildRestaurantPopup(_selectedRestaurant!),
-            ),
         ],
       ),
     );
   }
 
   Widget _buildSheet(ScrollController scrollController) {
-    return AnimatedBuilder(
-      animation: _sheetController,
-      builder: (context, child) {
-        // Progress 0 = collapsed, 1 = expanded
-        final double progress = _sheetController.isAttached
-            ? ((_sheetController.size - _collapsedSize) /
-                    (_expandedSize - _collapsedSize))
-                .clamp(0.0, 1.0)
-            : 0.0;
-
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF141414),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: SingleChildScrollView(
+        controller: scrollController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFB71C1C)),
+                ),
+              )
+            else if (_selectedRestaurant != null)
+              _buildSelectedRestaurant()
+            else
+              _buildRestaurantList(),
+
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedRestaurant() {
+    final r = _selectedRestaurant!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (r.imageUrl != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                r.imageUrl!,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 120,
+                  color: const Color(0xFF2A2A2A),
+                  child: const Icon(Icons.restaurant, color: Colors.grey),
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Handle + header — always visible
-              SingleChildScrollView(
-                controller: scrollController,
-                physics: const ClampingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Expanded(
+                child: Text(
+                  r.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB71C1C),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
                   children: [
-                    // Handle bar
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 12, bottom: 14),
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-
-                    // Title + View all
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "New on DINEO",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(
-                                context, '/restaurants'),
-                            child: const Text(
-                              "View all →",
-                              style: TextStyle(
-                                color: Color(0xFFB71C1C),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Horizontal cards list
-                    SizedBox(
-                      height: _cardHeight(progress),
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _restaurants.length,
-                        itemBuilder: (context, index) {
-                          return _buildCard(
-                              _restaurants[index], progress);
-                        },
+                    const Icon(Icons.star, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      r.rating.toStringAsFixed(1),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -348,230 +373,170 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  // Card height grows as sheet expands
-  double _cardHeight(double progress) {
-    const double collapsed = 110.0;
-    const double expanded = 180.0;
-    return collapsed + (expanded - collapsed) * progress;
-  }
-
-  Widget _buildCard(Map<String, dynamic> r, double progress) {
-    return GestureDetector(
-      onTap: () {
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            LatLng(r["lat"], r["lng"]),
-            16.0,
-          ),
-        );
-        setState(() {
-          _selectedRestaurant = r;
-        });
-      },
-      child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Rating — always visible
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2A1A1A),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFFB71C1C).withOpacity(0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.star,
-                      color: Color(0xFFB71C1C), size: 12),
-                  const SizedBox(width: 4),
-                  Text(
-                    r["rating"].toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Name — always visible
+          if (r.cuisineType != null) ...[
+            const SizedBox(height: 4),
             Text(
-              r["name"],
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            // Cuisine type — fades in as sheet expands
-            if (progress > 0.3) ...[
-              const SizedBox(height: 4),
-              Opacity(
-                opacity: ((progress - 0.3) / 0.7).clamp(0.0, 1.0),
-                child: Text(
-                  r["cuisineType"],
-                  style: const TextStyle(
-                    color: Color(0xFF888888),
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ],
-
-            // Description — fades in when almost fully expanded
-            if (progress > 0.6) ...[
-              const SizedBox(height: 6),
-              Opacity(
-                opacity: ((progress - 0.6) / 0.4).clamp(0.0, 1.0),
-                child: Text(
-                  r["description"],
-                  style: const TextStyle(
-                    color: Color(0xFF666666),
-                    fontSize: 10,
-                    height: 1.4,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRestaurantPopup(Map<String, dynamic> restaurant) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, 20 * (1 - value)),
-          child: Opacity(opacity: value, child: child),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              r.cuisineType!,
+              style: const TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
             ),
           ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+          if (r.address != null) ...[
+            const SizedBox(height: 4),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                const Icon(Icons.location_on, color: Colors.grey, size: 14),
+                const SizedBox(width: 4),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        restaurant["name"],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        restaurant["cuisineType"],
-                        style: const TextStyle(
-                          color: Color(0xFF888888),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A1A1A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: const Color(0xFFB71C1C).withOpacity(0.5)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star,
-                          color: Color(0xFFB71C1C), size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        restaurant["rating"].toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    r.address!,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/restaurants');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB71C1C),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+          ],
+          const SizedBox(height: 15),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB71C1C),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
                 ),
-                child: const Text(
-                  "View Restaurant",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text(
+                "View Restaurant",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRestaurantList() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Restaurants near you",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 160,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _restaurants.length,
+              itemBuilder: (context, index) {
+                final r = _restaurants[index];
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _selectedRestaurant = r);
+                    _buildMarkers();
+                    _mapController?.animateCamera(
+                      CameraUpdate.newLatLngZoom(
+                        LatLng(r.latitude!, r.longitude!),
+                        16,
+                      ),
+                    );
+                    _sheetController.animateTo(
+                      _expandedSize,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  },
+                  child: Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A2A),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: r.imageUrl != null
+                              ? Image.network(
+                                  r.imageUrl!,
+                                  height: 90,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    height: 90,
+                                    color: const Color(0xFF333333),
+                                    child: const Icon(Icons.restaurant,
+                                        color: Colors.grey),
+                                  ),
+                                )
+                              : Container(
+                                  height: 90,
+                                  color: const Color(0xFF333333),
+                                  child: const Icon(Icons.restaurant,
+                                      color: Colors.grey),
+                                ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.star,
+                                      color: Color(0xFFB71C1C), size: 12),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    r.rating.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                r.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -579,25 +544,25 @@ class _MapScreenState extends State<MapScreen> {
 
 const String _darkMapStyle = '''
 [
-  {"elementType": "geometry", "stylers": [{"color": "#212121"}]},
-  {"elementType": "labels.icon", "stylers": [{"visibility": "off"}]},
-  {"elementType": "labels.text.fill", "stylers": [{"color": "#757575"}]},
-  {"elementType": "labels.text.stroke", "stylers": [{"color": "#212121"}]},
-  {"featureType": "administrative", "elementType": "geometry", "stylers": [{"color": "#757575"}]},
-  {"featureType": "administrative.country", "elementType": "labels.text.fill", "stylers": [{"color": "#9e9e9e"}]},
-  {"featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{"color": "#bdbdbd"}]},
-  {"featureType": "poi", "elementType": "labels.text.fill", "stylers": [{"color": "#757575"}]},
-  {"featureType": "poi.park", "elementType": "geometry", "stylers": [{"color": "#181818"}]},
-  {"featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{"color": "#616161"}]},
-  {"featureType": "poi.park", "elementType": "labels.text.stroke", "stylers": [{"color": "#1b1b1b"}]},
-  {"featureType": "road", "elementType": "geometry.fill", "stylers": [{"color": "#2c2c2c"}]},
-  {"featureType": "road", "elementType": "labels.text.fill", "stylers": [{"color": "#8a8a8a"}]},
-  {"featureType": "road.arterial", "elementType": "geometry", "stylers": [{"color": "#373737"}]},
-  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#3c3c3c"}]},
-  {"featureType": "road.highway.controlled_access", "elementType": "geometry", "stylers": [{"color": "#4e4e4e"}]},
-  {"featureType": "road.local", "elementType": "labels.text.fill", "stylers": [{"color": "#616161"}]},
-  {"featureType": "transit", "elementType": "labels.text.fill", "stylers": [{"color": "#757575"}]},
-  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#000000"}]},
-  {"featureType": "water", "elementType": "labels.text.fill", "stylers": [{"color": "#3d3d3d"}]}
+  {"elementType": "geometry", "stylers": [{"color": "#1a1a2e"}]},
+  {"elementType": "labels.text.fill", "stylers": [{"color": "#8a8a9a"}]},
+  {"elementType": "labels.text.stroke", "stylers": [{"color": "#1a1a2e"}]},
+  {"featureType": "administrative", "elementType": "geometry", "stylers": [{"color": "#3a3a5c"}]},
+  {"featureType": "administrative.country", "elementType": "labels.text.fill", "stylers": [{"color": "#9e9eb8"}]},
+  {"featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{"color": "#c5c5e0"}]},
+  {"featureType": "poi", "elementType": "labels.text.fill", "stylers": [{"color": "#757585"}]},
+  {"featureType": "poi.park", "elementType": "geometry", "stylers": [{"color": "#1e2a1e"}]},
+  {"featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{"color": "#4a6a4a"}]},
+  {"featureType": "road", "elementType": "geometry.fill", "stylers": [{"color": "#2c2c44"}]},
+  {"featureType": "road", "elementType": "labels.text.fill", "stylers": [{"color": "#9a9ab4"}]},
+  {"featureType": "road.arterial", "elementType": "geometry", "stylers": [{"color": "#38384e"}]},
+  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#484860"}]},
+  {"featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{"color": "#1a1a2e"}]},
+  {"featureType": "road.local", "elementType": "labels.text.fill", "stylers": [{"color": "#636375"}]},
+  {"featureType": "transit", "elementType": "labels.text.fill", "stylers": [{"color": "#757585"}]},
+  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#0d1b2a"}]},
+  {"featureType": "water", "elementType": "labels.text.fill", "stylers": [{"color": "#3d6e8a"}]},
+  {"featureType": "landscape", "elementType": "geometry", "stylers": [{"color": "#1e1e30"}]},
+  {"featureType": "landscape.man_made", "elementType": "geometry", "stylers": [{"color": "#252538"}]}
 ]
 ''';

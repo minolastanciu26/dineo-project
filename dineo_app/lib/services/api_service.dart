@@ -243,4 +243,20 @@ Future<bool> createReview({
   return response.statusCode == 200;
 }
 
+// ── DISCOVERED ────────────────────────────────────────
+Future<Map<String, dynamic>> getDiscovered(int userId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/discovered/$userId'),
+  );
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+  return {
+    'allRestaurants': [],
+    'discoveredCount': 0,
+    'totalCount': 0,
+    'percentage': 0.0
+  };
+}
+
 }

@@ -4,6 +4,7 @@ import 'package:dineo_app/screens/favourite_restaurants_screen.dart';
 import 'package:dineo_app/screens/my_reservations_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'discovered_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -108,7 +109,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
                         ),
                       ),
-                      _buildProfileOption(Icons.explore_outlined, "Discovered", context, () {}),
+                      _buildProfileOption(
+  Icons.explore_outlined,
+  "Discovered",
+  context,
+  () => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const DiscoveredScreen()),
+  ),
+),
                       _buildProfileOption(Icons.payment_outlined, "Payment Methods", context, () {}),
                     ],
                   ),

@@ -5,6 +5,8 @@ import '../services/api_service.dart';
 import 'menu_screen.dart';
 import 'reservation_screen.dart';
 import 'favourite_items_screen.dart';
+import 'reviews_screen.dart';
+import 'map_screen.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   final Restaurant restaurant;
@@ -70,6 +72,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       backgroundColor: const Color(0xFF121212),
       body: CustomScrollView(
         slivers: [
+          // Header cu imagine
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
@@ -159,7 +162,66 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
+
+                  // Reviews + View on map links
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ReviewsScreen(
+                              restaurantId: widget.restaurant.id,
+                              restaurantName: widget.restaurant.name,
+                              userId: _userId,
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          "Reviews",
+                          style: TextStyle(
+                            color: Color(0xFFB71C1C),
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Color(0xFFB71C1C),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      GestureDetector(
+                       onTap: () {
+  if (restaurant.latitude != null && restaurant.longitude != null) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapScreen(
+          targetLat: restaurant.latitude,
+          targetLng: restaurant.longitude,
+          targetName: restaurant.name,
+          targetRestaurantId: restaurant.id,
+        ),
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Location not available for this restaurant")),
+    );
+  }
+},
+                        child: const Text(
+                          "View on map",
+                          style: TextStyle(
+                            color: Color(0xFFB71C1C),
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Color(0xFFB71C1C),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
 
                   // Cuisine type
                   if (restaurant.cuisineType != null)

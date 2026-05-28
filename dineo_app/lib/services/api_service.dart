@@ -202,4 +202,45 @@ class ApiService {
     throw Exception("Error getting recommendation");
   }
 }
+
+// ── REVIEWS ──────────────────────────────────────────
+Future<List<dynamic>> getReviews(int restaurantId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/reviews/restaurant/$restaurantId'),
+  );
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+  return [];
+}
+
+Future<Map<String, dynamic>> getAverageRating(int restaurantId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/reviews/restaurant/$restaurantId/average'),
+  );
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+  return {'average': 0.0, 'count': 0};
+}
+
+Future<bool> createReview({
+  required int userId,
+  required int restaurantId,
+  required int rating,
+  String? comment,
+}) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/api/reviews'),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({
+      "userId": userId,
+      "restaurantId": restaurantId,
+      "rating": rating,
+      "comment": comment,
+    }),
+  );
+  return response.statusCode == 200;
+}
+
 }

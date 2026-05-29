@@ -259,4 +259,46 @@ Future<Map<String, dynamic>> getDiscovered(int userId) async {
   };
 }
 
+// ── MONTHLY OFFER ─────────────────────────────────────
+Future<Map<String, dynamic>?> getCurrentOffer() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/monthlyoffer/current'),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<Map<String, dynamic>?> getUserOfferStatus(int userId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/monthlyoffer/user/$userId/status'),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<bool> useMonthlyOffer(int userId) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/monthlyoffer/use'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"userId": userId}),
+    );
+    return response.statusCode == 200;
+  } catch (e) {
+    return false;
+  }
+}
+
 }

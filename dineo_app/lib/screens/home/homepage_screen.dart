@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import '../../widgets/ai_chat_button.dart';
 import '../my_reservations_screen.dart';
+import '../monthly_offer_screen.dart';
+import '../restaurants_screen.dart';
 
 class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
@@ -13,6 +15,7 @@ class HomepageScreen extends StatefulWidget {
 
 class _HomepageScreenState extends State<HomepageScreen> {
   String _firstName = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -44,12 +47,23 @@ class _HomepageScreenState extends State<HomepageScreen> {
     }
   }
 
+  void _onSearch(String query) {
+    if (query.trim().isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RestaurantsScreen(initialSearch: query.trim()),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F0F),
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Positioned.fill(
@@ -82,10 +96,12 @@ class _HomepageScreenState extends State<HomepageScreen> {
                         height: 38,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFB71C1C), width: 1.5),
+                          border: Border.all(
+                              color: const Color(0xFFB71C1C), width: 1.5),
                           color: const Color(0xFF1E1E1E),
                         ),
-                        child: const Icon(Icons.person, color: Color(0xFFB71C1C), size: 20),
+                        child: const Icon(Icons.person,
+                            color: Color(0xFFB71C1C), size: 20),
                       ),
                     ),
                   ],
@@ -110,13 +126,15 @@ class _HomepageScreenState extends State<HomepageScreen> {
                     const SizedBox(height: 4),
                     Text(
                       _getGreeting(),
-                      style: const TextStyle(color: Color(0xFF888888), fontSize: 14),
+                      style: const TextStyle(
+                          color: Color(0xFF888888), fontSize: 14),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
 
+              // Search bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
@@ -124,32 +142,54 @@ class _HomepageScreenState extends State<HomepageScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A1A),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08)),
                   ),
                   child: Row(
                     children: [
                       const SizedBox(width: 18),
-                      const Icon(Icons.search, color: Color(0xFF666666), size: 18),
+                      const Icon(Icons.search,
+                          color: Color(0xFF666666), size: 18),
                       const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          "Search restaurants",
-                          style: TextStyle(color: Color(0xFF555555), fontSize: 14),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
+                          decoration: const InputDecoration(
+                            hintText: "Search restaurants",
+                            hintStyle:
+                                TextStyle(color: Color(0xFF555555)),
+                            border: InputBorder.none,
+                            isDense: true,
+                          ),
+                          onSubmitted: _onSearch,
+                          textInputAction: TextInputAction.search,
                         ),
                       ),
-                      Container(
-                        margin: const EdgeInsets.all(6),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFB71C1C),
-                          borderRadius: BorderRadius.circular(20),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RestaurantsScreen(
+                                initialSearch: ''),
+                          ),
                         ),
-                        child: const Text(
-                          "Filter",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                        child: Container(
+                          margin: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFB71C1C),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "Filter",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -171,6 +211,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
                     return Stack(
                       clipBehavior: Clip.none,
                       children: [
+                        // Imaginea semicerc
                         Positioned(
                           left: cx - R,
                           top: cy - R,
@@ -197,7 +238,8 @@ class _HomepageScreenState extends State<HomepageScreen> {
                                         stops: const [0.35, 1.0],
                                         colors: [
                                           Colors.transparent,
-                                          const Color(0xFF0F0F0F).withOpacity(0.95),
+                                          const Color(0xFF0F0F0F)
+                                              .withValues(alpha: 0.95),
                                         ],
                                       ),
                                     ),
@@ -208,6 +250,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
                           ),
                         ),
 
+                        // Arc decorativ
                         Positioned(
                           left: cx - arcR,
                           top: cy - arcR,
@@ -217,19 +260,38 @@ class _HomepageScreenState extends State<HomepageScreen> {
                           ),
                         ),
 
+                        // Menu items
                         ..._menuItems(context, cx, cy, arcR),
 
+                        // Buton cadou animat
+                        Positioned(
+                          left: cx + R * 0.15,
+                          top: cy - R * 0.25,
+                          child: _PulseGiftButton(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MonthlyOfferScreen(),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // View the map
                         Positioned(
                           bottom: areaH * 0.04,
                           left: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: () => Navigator.pushNamed(context, '/map'),
+                            onTap: () =>
+                                Navigator.pushNamed(context, '/map'),
                             child: const Column(
                               children: [
                                 Text(
                                   "View the map",
-                                  style: TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
+                                  style: TextStyle(
+                                      color: Color(0xFFB71C1C),
+                                      fontSize: 13),
                                 ),
                                 SizedBox(height: 2),
                                 Icon(Icons.keyboard_arrow_down,
@@ -246,9 +308,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
             ],
           ),
 
+          // AI button — dreapta jos
           Positioned(
             bottom: size.height * 0.04,
-            left: size.width * 0.06,
+            right: size.width * 0.06,
             child: const AiChatButton(),
           ),
         ],
@@ -256,7 +319,8 @@ class _HomepageScreenState extends State<HomepageScreen> {
     );
   }
 
-  List<Widget> _menuItems(BuildContext context, double cx, double cy, double R) {
+  List<Widget> _menuItems(
+      BuildContext context, double cx, double cy, double R) {
     final items = [
       {"label": "Restaurants", "route": "/restaurants", "angle": -52.0},
       {"label": "Map", "route": "/map", "angle": -18.0},
@@ -277,7 +341,8 @@ class _HomepageScreenState extends State<HomepageScreen> {
             if (item["label"] == "Calendar") {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const MyReservationsScreen()),
               );
             } else {
               Navigator.pushNamed(context, item["route"] as String);
@@ -292,7 +357,8 @@ class _HomepageScreenState extends State<HomepageScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: const Color(0xFF0F0F0F),
-                  border: Border.all(color: const Color(0xFFB71C1C), width: 2.5),
+                  border: Border.all(
+                      color: const Color(0xFFB71C1C), width: 2.5),
                 ),
               ),
               const SizedBox(width: 12),
@@ -313,6 +379,87 @@ class _HomepageScreenState extends State<HomepageScreen> {
   }
 }
 
+class _PulseGiftButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _PulseGiftButton({required this.onTap});
+
+  @override
+  State<_PulseGiftButton> createState() => _PulseGiftButtonState();
+}
+
+class _PulseGiftButtonState extends State<_PulseGiftButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _pulse = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulse.value,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Glow cu fade spre exterior
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Color(0xFFB71C1C).withValues(alpha: 0.4),
+                        Color(0xFFB71C1C).withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+                // Buton principal
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFB71C1C),
+                  ),
+                  child: const Icon(
+                    Icons.card_giftcard,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _ArcPainter extends CustomPainter {
   final double radius;
   const _ArcPainter({required this.radius});
@@ -320,7 +467,7 @@ class _ArcPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 

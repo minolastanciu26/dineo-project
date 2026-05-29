@@ -6,7 +6,9 @@ import 'restaurant_detail_screen.dart';
 import 'restaurants_category_screen.dart';
 
 class RestaurantsScreen extends StatefulWidget {
-  const RestaurantsScreen({super.key});
+  final String initialSearch;
+
+  const RestaurantsScreen({super.key, this.initialSearch = ''});
 
   @override
   State<RestaurantsScreen> createState() => _RestaurantsScreenState();
@@ -26,41 +28,10 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRestaurants();
-  }
-
-  Future<Position?> _getUserLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return null;
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return null;
+    if (widget.initialSearch.isNotEmpty) {
+      _searchController.text = widget.initialSearch;
     }
-    if (permission == LocationPermission.deniedForever) return null;
-
-    return await Geolocator.getCurrentPosition();
-  }
-
-  List<Restaurant> _sortByNearest(List<Restaurant> restaurants, Position userPos) {
-    final withLocation = restaurants
-        .where((r) => r.latitude != null && r.longitude != null)
-        .toList();
-
-    withLocation.sort((a, b) {
-      final distA = Geolocator.distanceBetween(
-        userPos.latitude, userPos.longitude,
-        a.latitude!, a.longitude!,
-      );
-      final distB = Geolocator.distanceBetween(
-        userPos.latitude, userPos.longitude,
-        b.latitude!, b.longitude!,
-      );
-      return distA.compareTo(distB);
-    });
-
-    return withLocation;
+    _loadRestaurants();
   }
 
   Future<void> _loadRestaurants() async {
@@ -72,27 +43,46 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       });
 
       final all = await _apiService.getRestaurants();
-      final top = await _apiService.getTopRated();
+      final topRated = await _apiService.getTopRated();
       final newR = await _apiService.getNewRestaurants();
 
       List<Restaurant> nearest = [];
-      final position = await _getUserLocation();
-      if (position != null) {
-        nearest = _sortByNearest(all, position);
-      }
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.always ||
+            permission == LocationPermission.whileInUse) {
+          final pos = await Geolocator.getCurrentPosition();
+          nearest = List<Restaurant>.from(all)
+            ..sort((a, b) {
+              if (a.latitude == null || a.longitude == null) return 1;
+              if (b.latitude == null || b.longitude == null) return -1;
+              final da = Geolocator.distanceBetween(
+                  pos.latitude, pos.longitude, a.latitude!, a.longitude!);
+              final db = Geolocator.distanceBetween(
+                  pos.latitude, pos.longitude, b.latitude!, b.longitude!);
+              return da.compareTo(db);
+            });
+          nearest = nearest.take(10).toList();
+        }
+      } catch (_) {}
 
       if (!mounted) return;
       setState(() {
         _allRestaurants = all;
-        _topRated = top;
+        _topRated = topRated;
         _newRestaurants = newR;
         _nearest = nearest;
         _isLoading = false;
       });
+
+      // Dacă avem search initial, facem search automat
+      if (widget.initialSearch.isNotEmpty) {
+        _search(widget.initialSearch);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = "Cannot connect to server.";
+        _error = "Could not load restaurants.";
         _isLoading = false;
       });
     }
@@ -156,6 +146,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
               child: TextField(
                 controller: _searchController,
                 style: const TextStyle(color: Colors.white),
+                autofocus: widget.initialSearch.isNotEmpty,
                 onChanged: (val) {
                   if (val.isEmpty) {
                     _loadRestaurants();
@@ -167,6 +158,15 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                   hintText: "Search restaurants...",
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.grey),
+                          onPressed: () {
+                            _searchController.clear();
+                            _loadRestaurants();
+                          },
+                        )
+                      : null,
                   filled: true,
                   fillColor: const Color(0xFF1E1E1E),
                   border: OutlineInputBorder(
@@ -182,23 +182,29 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFB71C1C)),
+                      child: CircularProgressIndicator(
+                          color: Color(0xFFB71C1C)),
                     )
                   : _error != null
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error_outline, color: Colors.grey, size: 50),
+                              const Icon(Icons.error_outline,
+                                  color: Colors.grey, size: 50),
                               const SizedBox(height: 10),
-                              Text(_error!, style: const TextStyle(color: Colors.grey)),
+                              Text(_error!,
+                                  style:
+                                      const TextStyle(color: Colors.grey)),
                               const SizedBox(height: 20),
                               ElevatedButton(
                                 onPressed: _loadRestaurants,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFB71C1C),
                                 ),
-                                child: const Text("Retry", style: TextStyle(color: Colors.white)),
+                                child: const Text("Retry",
+                                    style:
+                                        TextStyle(color: Colors.white)),
                               ),
                             ],
                           ),
@@ -207,25 +213,30 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                           onRefresh: _loadRestaurants,
                           color: const Color(0xFFB71C1C),
                           child: ListView(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20),
                             children: [
                               if (_searchController.text.isEmpty) ...[
                                 // Popular
-                                _buildSectionHeader("Popular Restaurants", _topRated),
+                                _buildSectionHeader(
+                                    "Popular Restaurants", _topRated),
                                 _buildHorizontalList(_topRated),
                                 const SizedBox(height: 25),
 
                                 // Nearest
-                                _buildSectionHeader("Nearest to You", _nearest),
+                                _buildSectionHeader(
+                                    "Nearest to You", _nearest),
                                 _nearest.isEmpty
                                     ? const Padding(
-                                        padding: EdgeInsets.only(bottom: 25),
+                                        padding:
+                                            EdgeInsets.only(bottom: 25),
                                         child: SizedBox(
                                           height: 80,
                                           child: Center(
                                             child: Text(
                                               "Enable location to see nearby restaurants",
-                                              style: TextStyle(color: Colors.grey),
+                                              style: TextStyle(
+                                                  color: Colors.grey),
                                               textAlign: TextAlign.center,
                                             ),
                                           ),
@@ -235,18 +246,34 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                                 const SizedBox(height: 25),
 
                                 // New
-                                _buildSectionHeader("New on DINEO", _newRestaurants),
+                                _buildSectionHeader(
+                                    "New on DINEO", _newRestaurants),
                                 _buildHorizontalList(_newRestaurants),
                                 const SizedBox(height: 25),
 
                                 // All
-                                _buildSectionHeader("All Restaurants", _allRestaurants),
+                                _buildSectionHeader(
+                                    "All Restaurants", _allRestaurants),
                                 _buildHorizontalList(_allRestaurants),
                                 const SizedBox(height: 20),
                               ] else ...[
-                                ..._allRestaurants.map(
-                                  (r) => _buildRestaurantCard(r, horizontal: false),
-                                ),
+                                if (_allRestaurants.isEmpty)
+                                  const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(40),
+                                      child: Text(
+                                        "No restaurants found",
+                                        style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 16),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  ..._allRestaurants.map(
+                                    (r) => _buildRestaurantCard(r,
+                                        horizontal: false),
+                                  ),
                               ],
                               const SizedBox(height: 20),
                             ],
@@ -259,7 +286,8 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, List<Restaurant> restaurants) {
+  Widget _buildSectionHeader(
+      String title, List<Restaurant> restaurants) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Row(
@@ -285,7 +313,8 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
             ),
             child: const Text(
               "See all",
-              style: TextStyle(color: Color(0xFFB71C1C), fontSize: 14),
+              style:
+                  TextStyle(color: Color(0xFFB71C1C), fontSize: 14),
             ),
           ),
         ],
@@ -298,7 +327,8 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
       return const SizedBox(
         height: 150,
         child: Center(
-          child: Text("No restaurants yet", style: TextStyle(color: Colors.grey)),
+          child: Text("No restaurants yet",
+              style: TextStyle(color: Colors.grey)),
         ),
       );
     }
@@ -315,12 +345,14 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     );
   }
 
-  Widget _buildRestaurantCard(Restaurant restaurant, {required bool horizontal}) {
+  Widget _buildRestaurantCard(Restaurant restaurant,
+      {required bool horizontal}) {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => RestaurantDetailScreen(restaurant: restaurant),
+          builder: (_) =>
+              RestaurantDetailScreen(restaurant: restaurant),
         ),
       ),
       child: Container(
@@ -337,14 +369,16 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(15)),
               child: restaurant.imageUrl != null
                   ? Image.network(
                       restaurant.imageUrl!,
                       height: horizontal ? 120 : 150,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildPlaceholder(horizontal),
+                      errorBuilder: (_, __, ___) =>
+                          _buildPlaceholder(horizontal),
                     )
                   : _buildPlaceholder(horizontal),
             ),
@@ -368,7 +402,8 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                     const SizedBox(height: 3),
                     Text(
                       restaurant.address!,
-                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      style: const TextStyle(
+                          color: Colors.grey, fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -376,20 +411,25 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      const Icon(Icons.star, color: Color(0xFFB71C1C), size: 14),
+                      const Icon(Icons.star,
+                          color: Color(0xFFB71C1C), size: 14),
                       const SizedBox(width: 3),
                       Text(
                         restaurant.rating.toStringAsFixed(1),
-                        style: const TextStyle(color: Colors.white, fontSize: 11),
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 11),
                       ),
                       if (restaurant.cuisineType != null) ...[
                         const SizedBox(width: 6),
-                        const Text("•", style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        const Text("•",
+                            style: TextStyle(
+                                color: Colors.grey, fontSize: 11)),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             restaurant.cuisineType!,
-                            style: const TextStyle(color: Colors.grey, fontSize: 11),
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 11),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

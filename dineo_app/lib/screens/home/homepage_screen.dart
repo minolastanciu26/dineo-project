@@ -5,6 +5,7 @@ import '../../widgets/ai_chat_button.dart';
 import '../my_reservations_screen.dart';
 import '../monthly_offer_screen.dart';
 import '../restaurants_screen.dart';
+import '../notifications_screen.dart';
 
 class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
@@ -89,20 +90,52 @@ class _HomepageScreenState extends State<HomepageScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Image.asset("assets/images/logo.png", height: 28),
-                    GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/profile'),
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: const Color(0xFFB71C1C), width: 1.5),
-                          color: const Color(0xFF1E1E1E),
+                    Row(
+                      children: [
+                        // Clopoțel notificări
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const NotificationsScreen()),
+                          ),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: const Color(0xFFB71C1C),
+                                  width: 1.5),
+                              color: const Color(0xFF1E1E1E),
+                            ),
+                            child: const Icon(
+                                Icons.notifications_outlined,
+                                color: Color(0xFFB71C1C),
+                                size: 20),
+                          ),
                         ),
-                        child: const Icon(Icons.person,
-                            color: Color(0xFFB71C1C), size: 20),
-                      ),
+                        const SizedBox(width: 10),
+                        // Profil
+                        GestureDetector(
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/profile'),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: const Color(0xFFB71C1C),
+                                  width: 1.5),
+                              color: const Color(0xFF1E1E1E),
+                            ),
+                            child: const Icon(Icons.person,
+                                color: Color(0xFFB71C1C), size: 20),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -115,7 +148,9 @@ class _HomepageScreenState extends State<HomepageScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _firstName.isEmpty ? "Hi there!" : "Hi, $_firstName!",
+                      _firstName.isEmpty
+                          ? "Hi there!"
+                          : "Hi, $_firstName!",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 30,
@@ -271,7 +306,8 @@ class _HomepageScreenState extends State<HomepageScreen> {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const MonthlyOfferScreen(),
+                                builder: (_) =>
+                                    const MonthlyOfferScreen(),
                               ),
                             ),
                           ),
@@ -423,7 +459,6 @@ class _PulseGiftButtonState extends State<_PulseGiftButton>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Glow cu fade spre exterior
                 Container(
                   width: 70,
                   height: 70,
@@ -437,7 +472,6 @@ class _PulseGiftButtonState extends State<_PulseGiftButton>
                     ),
                   ),
                 ),
-                // Buton principal
                 Container(
                   width: 44,
                   height: 44,

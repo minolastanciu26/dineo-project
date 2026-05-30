@@ -2,9 +2,11 @@ import 'package:dineo_app/screens/login_screen.dart';
 import 'package:dineo_app/screens/personal_info_screen.dart';
 import 'package:dineo_app/screens/favourite_restaurants_screen.dart';
 import 'package:dineo_app/screens/my_reservations_screen.dart';
+import 'package:dineo_app/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'discovered_screen.dart';
+import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,6 +18,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String _fullName = '';
   int _userId = 0;
+  int _unreadCount = 0;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -31,6 +35,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _fullName = '$firstName $lastName'.trim();
       _userId = prefs.getInt('userId') ?? 0;
     });
+    _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await _apiService.getUnreadCount(_userId);
+      if (mounted) setState(() => _unreadCount = count);
+    } catch (_) {}
   }
 
   @override
@@ -50,6 +62,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(width: 10),
                 Image.asset('assets/images/logo.png', height: 35),
+                const Spacer(),
+                // Clopoțel cu badge
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationsScreen()),
+                    );
+                    _loadUnreadCount();
+                  },
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF2A2A2A),
+                          border: Border.all(
+                              color: const Color(0xFFB71C1C), width: 1.5),
+                        ),
+                        child: const Icon(Icons.notifications_outlined,
+                            color: Color(0xFFB71C1C), size: 20),
+                      ),
+                      if (_unreadCount > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFB71C1C),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                _unreadCount > 9 ? '9+' : '$_unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -63,7 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const CircleAvatar(
                     radius: 50,
                     backgroundColor: Color(0xFF332020),
-                    child: Icon(Icons.person_outline, size: 55, color: Color(0xFFB71C1C)),
+                    child: Icon(Icons.person_outline,
+                        size: 55, color: Color(0xFFB71C1C)),
                   ),
                   const SizedBox(height: 15),
                   Text(
@@ -86,7 +150,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context,
                         () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const PersonalInfoScreen()),
                         ),
                       ),
                       _buildProfileOption(
@@ -96,7 +161,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FavouriteRestaurantsScreen(userId: _userId),
+                            builder: (_) =>
+                                FavouriteRestaurantsScreen(userId: _userId),
                           ),
                         ),
                       ),
@@ -106,19 +172,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context,
                         () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const MyReservationsScreen()),
                         ),
                       ),
                       _buildProfileOption(
-  Icons.explore_outlined,
-  "Discovered",
-  context,
-  () => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const DiscoveredScreen()),
-  ),
-),
-                      _buildProfileOption(Icons.payment_outlined, "Payment Methods", context, () {}),
+                        Icons.explore_outlined,
+                        "Discovered",
+                        context,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const DiscoveredScreen()),
+                        ),
+                      ),
+                      _buildProfileOption(
+                        Icons.notifications_outlined,
+                        "Notifications",
+                        context,
+                        () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const NotificationsScreen()),
+                          );
+                          _loadUnreadCount();
+                        },
+                      ),
+                      _buildProfileOption(
+                          Icons.payment_outlined,
+                          "Payment Methods",
+                          context,
+                          () {}),
                     ],
                   ),
                   const SizedBox(height: 15),
@@ -167,7 +253,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(color: color, borderRadius: borderRadius),
       padding: EdgeInsets.only(
         top: 15,
-        bottom: isBottom ? MediaQuery.of(context).padding.bottom + 15 : 15,
+        bottom: isBottom
+            ? MediaQuery.of(context).padding.bottom + 15
+            : 15,
       ),
       child: Column(children: options),
     );
@@ -180,7 +268,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback onTap,
   ) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 3.5),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 25, vertical: 3.5),
       leading: Icon(icon, color: const Color(0xFFB71C1C), size: 28),
       title: Text(
         title,
@@ -190,9 +279,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fontWeight: FontWeight.w400,
         ),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFB71C1C), size: 30),
+      trailing: const Icon(Icons.chevron_right,
+          color: Color(0xFFB71C1C), size: 30),
       onTap: onTap,
-      shape: const Border(bottom: BorderSide(color: Colors.white10, width: 0.8)),
+      shape: const Border(
+          bottom: BorderSide(color: Colors.white10, width: 0.8)),
     );
   }
 
@@ -201,8 +292,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF262626),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Log Out", style: TextStyle(color: Colors.white)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title:
+            const Text("Log Out", style: TextStyle(color: Colors.white)),
         content: const Text(
           "Are you sure you want to log out?",
           style: TextStyle(color: Colors.grey),
@@ -210,7 +303,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("NO", style: TextStyle(color: Colors.grey)),
+            child:
+                const Text("NO", style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
@@ -219,11 +313,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (!mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const LoginScreen()),
                 (route) => false,
               );
             },
-            child: const Text("YES", style: TextStyle(color: Color(0xFFB71C1C))),
+            child: const Text("YES",
+                style: TextStyle(color: Color(0xFFB71C1C))),
           ),
         ],
       ),
@@ -235,10 +331,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF262626),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
         title: const Text(
           "Delete Account",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: const Text(
           "Are you sure you want to delete your account? This action is permanent and all your data will be lost.",
@@ -247,7 +345,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL", style: TextStyle(color: Colors.grey)),
+            child: const Text("CANCEL",
+                style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
@@ -257,20 +356,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (!mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const LoginScreen()),
                 (route) => false,
               );
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Account deleted successfully.")),
+                const SnackBar(
+                    content: Text("Account deleted successfully.")),
               );
             },
             child: const Text(
               "DELETE",
-              style: TextStyle(color: Color(0xFFB71C1C), fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Color(0xFFB71C1C),
+                  fontWeight: FontWeight.bold),
             ),
           ),
         ],
       ),
     );
   }
-}
+} 

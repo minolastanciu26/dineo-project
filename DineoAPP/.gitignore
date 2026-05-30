@@ -1,0 +1,15 @@
+# .NET
+DineoAPP/appsettings.json
+DineoAPP/bin/
+DineoAPP/obj/
+
+# Flutter
+dineo_app/.dart_tool/
+dineo_app/build/
+dineo_app/.flutter-plugins
+dineo_app/.flutter-plugins-dependencies
+
+# IDE
+.vs/
+*.user
+.DS_Store

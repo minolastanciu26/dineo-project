@@ -301,4 +301,61 @@ Future<bool> useMonthlyOffer(int userId) async {
   }
 }
 
+// ── NOTIFICATIONS ─────────────────────────────────────
+Future<List<dynamic>> getNotifications(int userId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/notifications/$userId'),
+  );
+  if (response.statusCode == 200) return jsonDecode(response.body);
+  return [];
+}
+
+Future<int> getUnreadCount(int userId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/notifications/$userId/unread'),
+  );
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body)['count'] as int;
+  }
+  return 0;
+}
+
+Future<bool> markNotificationAsRead(int id) async {
+  final response = await http.put(
+    Uri.parse('$baseUrl/api/notifications/$id/read'),
+  );
+  return response.statusCode == 200;
+}
+
+Future<bool> markAllNotificationsAsRead(int userId) async {
+  final response = await http.put(
+    Uri.parse('$baseUrl/api/notifications/readall/$userId'),
+  );
+  return response.statusCode == 200;
+}
+
+Future<bool> deleteNotification(int id) async {
+  final response = await http.delete(
+    Uri.parse('$baseUrl/api/notifications/$id'),
+  );
+  return response.statusCode == 200;
+}
+
+Future<bool> createNotification({
+  required int userId,
+  required String title,
+  required String message,
+}) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/api/notifications'),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({
+      "userId": userId,
+      "title": title,
+      "message": message,
+    }),
+  );
+  return response.statusCode == 200;
+}
+
 }

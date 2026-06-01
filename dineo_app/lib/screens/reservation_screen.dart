@@ -26,6 +26,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
   int _weekOffset = 0;
 
   List<dynamic> _tables = [];
+  List<dynamic> _decors = [];
   int? _selectedTableId;
   int? _selectedTableNumber;
   int? _selectedTableSeats;
@@ -48,13 +49,17 @@ class _ReservationScreenState extends State<ReservationScreen> {
   Future<void> _loadTables() async {
     setState(() => _loadingTables = true);
     try {
-      final tables = await _apiService.getAvailableTables(
-        widget.restaurant.id,
-        _selectedDate,
-        _selectedTime,
-      );
+      final results = await Future.wait([
+        _apiService.getAvailableTables(
+          widget.restaurant.id,
+          _selectedDate,
+          _selectedTime,
+        ),
+        _apiService.getFloorDecors(widget.restaurant.id),
+      ]);
       setState(() {
-        _tables = tables;
+        _tables = results[0];
+        _decors = results[1];
         _selectedTableId = null;
         _selectedTableNumber = null;
         _selectedTableSeats = null;
@@ -131,12 +136,11 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // Date selector cu sageti
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      "Select a date to reserve your table",
+                      "Select a date",
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                     Row(
@@ -209,8 +213,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 ),
                 const SizedBox(height: 25),
 
-                // Time selector
-                const Text("Choose a time for reservation", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                const Text("Choose a time", style: TextStyle(color: Colors.grey, fontSize: 13)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -251,7 +254,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
     return months[month - 1];
   }
 
-  // ── STEP 2 ────────────────────────────────────────
+  // ── STEP 2 — TABLE LAYOUT cu decor ───────────────
   Widget _buildStep2() {
     return Column(
       children: [
@@ -272,6 +275,21 @@ class _ReservationScreenState extends State<ReservationScreen> {
         ),
         const SizedBox(height: 10),
 
+        // Legenda
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              _legendItem(const Color(0xFF3A3A3A), "Available"),
+              const SizedBox(width: 16),
+              _legendItem(const Color(0xFFB71C1C), "Selected"),
+              const SizedBox(width: 16),
+              _legendItem(const Color(0xFF2A2A2A), "Taken"),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
         Expanded(
           child: _loadingTables
               ? const Center(child: CircularProgressIndicator(color: Color(0xFFB71C1C)))
@@ -279,7 +297,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                   ? const Center(
                       child: Text("No tables available", style: TextStyle(color: Colors.grey)),
                     )
-                  : _buildTableMap(),
+                  : _buildTableLayout(),
         ),
 
         _buildNextButton(_selectedTableId == null
@@ -289,155 +307,184 @@ class _ReservationScreenState extends State<ReservationScreen> {
     );
   }
 
-  Widget _buildTableMap() {
-    return Stack(
+  Widget _legendItem(Color color, String label) {
+    return Row(
       children: [
-        Positioned(
-          right: 10,
-          top: 0,
-          bottom: 0,
-          child: Center(
-            child: RotatedBox(
-              quarterTurns: 1,
-              child: Text(
-                "WINDOW VIEW",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.15),
-                  fontSize: 10,
-                  letterSpacing: 3,
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 40, 0),
-          child: GridView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 20,
-              childAspectRatio: 1.1,
-            ),
-            itemCount: _tables.length,
-            itemBuilder: (context, index) {
-              final table = _tables[index];
-              final isAvailable = table['isAvailable'] == true;
-              final isSelected = _selectedTableId == table['id'];
-              final seats = table['seats'] as int;
-
-              return GestureDetector(
-                onTap: isAvailable
-                    ? () => setState(() {
-                          _selectedTableId = table['id'];
-                          _selectedTableNumber = table['tableNumber'];
-                          _selectedTableSeats = seats;
-                        })
-                    : null,
-                child: _buildTableWidget(
-                  number: table['tableNumber'],
-                  seats: seats,
-                  isAvailable: isAvailable,
-                  isSelected: isSelected,
-                ),
-              );
-            },
-          ),
-        ),
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
       ],
     );
   }
 
-  Widget _buildTableWidget({
+  Widget _buildTableLayout() {
+    // Calculeaza dimensiunile canvas din pozitii mese + decor
+    double maxX = 300;
+    double maxY = 300;
+    for (final t in _tables) {
+      final x = (t['positionX'] as num?)?.toDouble() ?? 0;
+      final y = (t['positionY'] as num?)?.toDouble() ?? 0;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+    for (final d in _decors) {
+      final x = (d['x'] as num?)?.toDouble() ?? 0;
+      final y = (d['y'] as num?)?.toDouble() ?? 0;
+      final w = (d['width'] as num?)?.toDouble() ?? 80;
+      final h = (d['height'] as num?)?.toDouble() ?? 40;
+      if (x + w > maxX) maxX = x + w;
+      if (y + h > maxY) maxY = y + h;
+    }
+    final canvasW = maxX + 80;
+    final canvasH = maxY + 80;
+
+    return InteractiveViewer(
+      minScale: 0.4,
+      maxScale: 2.5,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView(
+          child: Container(
+            width: canvasW,
+            height: canvasH,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF2A2A2E)),
+            ),
+            child: Stack(
+              children: [
+                // Grid
+                CustomPaint(
+                  size: Size(canvasW, canvasH),
+                  painter: _GridPainter(),
+                ),
+
+                // ── Decor elements ──────────────────
+                ..._decors.map((d) {
+                  final x = (d['x'] as num?)?.toDouble() ?? 0;
+                  final y = (d['y'] as num?)?.toDouble() ?? 0;
+                  final w = (d['width'] as num?)?.toDouble() ?? 80;
+                  final h = (d['height'] as num?)?.toDouble() ?? 40;
+                  final icon = d['icon'] as String? ?? '';
+                  final label = d['label'] as String? ?? '';
+
+                  return Positioned(
+                    left: x,
+                    top: y,
+                    child: Container(
+                      width: w,
+                      height: h,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF242428),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF3A3A3E), width: 1.5),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(icon, style: const TextStyle(fontSize: 16)),
+                          if (h > 35)
+                            Text(
+                              label,
+                              style: const TextStyle(
+                                color: Color(0xFF888888),
+                                fontSize: 9,
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+
+                // ── Tables ─────────────────────────
+                ..._tables.map((table) {
+                  final x = (table['positionX'] as num?)?.toDouble() ?? 0;
+                  final y = (table['positionY'] as num?)?.toDouble() ?? 0;
+                  final isAvailable = table['isAvailable'] == true;
+                  final isSelected = _selectedTableId == table['id'];
+                  final seats = table['seats'] as int;
+                  final number = table['tableNumber'] as int;
+
+                  return Positioned(
+                    left: x - 32,
+                    top: y - 32,
+                    child: GestureDetector(
+                      onTap: isAvailable
+                          ? () => setState(() {
+                                _selectedTableId = table['id'];
+                                _selectedTableNumber = number;
+                                _selectedTableSeats = seats;
+                              })
+                          : null,
+                      child: _buildTableNode(
+                        number: number,
+                        seats: seats,
+                        isAvailable: isAvailable,
+                        isSelected: isSelected,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableNode({
     required int number,
     required int seats,
     required bool isAvailable,
     required bool isSelected,
   }) {
-    Color tableColor;
-    if (isSelected) {
-      tableColor = const Color(0xFFB71C1C);
-    } else if (!isAvailable) {
-      tableColor = const Color(0xFF2A2A2A);
-    } else {
-      tableColor = const Color(0xFF3A3A3A);
-    }
+    Color bg;
+    if (isSelected) bg = const Color(0xFFB71C1C);
+    else if (!isAvailable) bg = const Color(0xFF2A2A2A);
+    else bg = const Color(0xFF3A3A3A);
 
-    Color chairColor;
-    if (isSelected) {
-      chairColor = const Color(0xFFB71C1C).withOpacity(0.7);
-    } else if (!isAvailable) {
-      chairColor = const Color(0xFF1A1A1A);
-    } else {
-      chairColor = const Color(0xFF4A4A4A);
-    }
+    Color border;
+    if (isSelected) border = const Color(0xFFE53935);
+    else if (!isAvailable) border = const Color(0xFF222222);
+    else border = const Color(0xFF555555);
 
-    // Top chairs
-    int topChairs = 0;
-    int bottomChairs = 0;
-    if (seats == 2) { topChairs = 0; bottomChairs = 2; }
-    else if (seats == 4) { topChairs = 2; bottomChairs = 2; }
-    else if (seats == 6) { topChairs = 3; bottomChairs = 3; }
-    else if (seats == 8) { topChairs = 4; bottomChairs = 4; }
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Top chairs
-        if (topChairs > 0)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(topChairs, (_) => Container(
-              width: 12,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: chairColor,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            )),
-          ),
-        const SizedBox(height: 3),
-
-        // Table
-        Container(
-          width: 52,
-          height: 28,
-          decoration: BoxDecoration(
-            color: tableColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(
-              "$number",
-              style: TextStyle(
-                color: isAvailable || isSelected ? Colors.white : Colors.grey,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: bg,
+        shape: BoxShape.circle,
+        border: Border.all(color: border, width: 2),
+        boxShadow: isSelected
+            ? [BoxShadow(color: const Color(0xFFB71C1C).withOpacity(0.4), blurRadius: 12, spreadRadius: 2)]
+            : null,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "$number",
+            style: TextStyle(
+              color: isAvailable || isSelected ? Colors.white : Colors.grey,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        const SizedBox(height: 3),
-
-        // Bottom chairs
-        if (bottomChairs > 0)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(bottomChairs, (_) => Container(
-              width: 12,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: chairColor,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            )),
+          Text(
+            "$seats seats",
+            style: TextStyle(
+              color: isAvailable || isSelected ? Colors.white70 : Colors.grey.shade700,
+              fontSize: 9,
+            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -461,18 +508,15 @@ class _ReservationScreenState extends State<ReservationScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
-
                 _buildConfirmRow("Restaurant", widget.restaurant.name),
                 _buildConfirmRow(
                   "Date",
                   "${_selectedDate.day} ${_monthName(_selectedDate.month)} ${_selectedDate.year}",
                 ),
                 _buildConfirmRow("Time", _selectedTime),
-                _buildConfirmRow("No. of seats", "${_selectedTableSeats ?? '-'}"),
+                _buildConfirmRow("Seats", "${_selectedTableSeats ?? '-'}"),
                 _buildConfirmRow("Table no.", "${_selectedTableNumber ?? '-'}"),
-
                 const SizedBox(height: 30),
-
                 Center(
                   child: _buildTableWidget(
                     number: _selectedTableNumber ?? 0,
@@ -485,7 +529,6 @@ class _ReservationScreenState extends State<ReservationScreen> {
             ),
           ),
         ),
-
         Padding(
           padding: const EdgeInsets.all(20),
           child: SizedBox(
@@ -540,25 +583,30 @@ class _ReservationScreenState extends State<ReservationScreen> {
             width: 100,
             height: 100,
             decoration: const BoxDecoration(
-              color: Color(0xFF1E3A1E),
+              color: Color(0xFF1A2A3A),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 60),
+            child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFFB300), size: 60),
           ),
           const SizedBox(height: 25),
           const Text(
-            "Success!",
+            "Request Sent!",
             style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           const Text(
-            "Your table is reserved",
-            style: TextStyle(color: Colors.grey, fontSize: 16),
+            "Your reservation is pending confirmation",
+            style: TextStyle(color: Colors.grey, fontSize: 15),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
-          const Text(
-            "NOTE: Reservation is only for 1 hour",
-            style: TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              "The restaurant will confirm or reject your reservation shortly. You will receive a notification.",
+              style: TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 40),
           ElevatedButton(
@@ -575,6 +623,70 @@ class _ReservationScreenState extends State<ReservationScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── TABLE WIDGET (Step 3 preview) ─────────────────
+  Widget _buildTableWidget({
+    required int number,
+    required int seats,
+    required bool isAvailable,
+    required bool isSelected,
+  }) {
+    Color tableColor;
+    if (isSelected) tableColor = const Color(0xFFB71C1C);
+    else if (!isAvailable) tableColor = const Color(0xFF2A2A2A);
+    else tableColor = const Color(0xFF3A3A3A);
+
+    Color chairColor;
+    if (isSelected) chairColor = const Color(0xFFB71C1C).withOpacity(0.7);
+    else if (!isAvailable) chairColor = const Color(0xFF1A1A1A);
+    else chairColor = const Color(0xFF4A4A4A);
+
+    int topChairs = 0, bottomChairs = 0;
+    if (seats == 2) { topChairs = 0; bottomChairs = 2; }
+    else if (seats == 4) { topChairs = 2; bottomChairs = 2; }
+    else if (seats == 6) { topChairs = 3; bottomChairs = 3; }
+    else if (seats == 8) { topChairs = 4; bottomChairs = 4; }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (topChairs > 0)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(topChairs, (_) => Container(
+              width: 12, height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(color: chairColor, borderRadius: BorderRadius.circular(3)),
+            )),
+          ),
+        const SizedBox(height: 3),
+        Container(
+          width: 52, height: 28,
+          decoration: BoxDecoration(color: tableColor, borderRadius: BorderRadius.circular(8)),
+          child: Center(
+            child: Text(
+              "$number",
+              style: TextStyle(
+                color: isAvailable || isSelected ? Colors.white : Colors.grey,
+                fontSize: 13, fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        if (bottomChairs > 0)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(bottomChairs, (_) => Container(
+              width: 12, height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(color: chairColor, borderRadius: BorderRadius.circular(3)),
+            )),
+          ),
+      ],
     );
   }
 
@@ -598,11 +710,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
           Expanded(
             child: Text(
               widget.restaurant.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -620,9 +728,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: onPressed == null
-                ? const Color(0xFF333333)
-                : const Color(0xFFB71C1C),
+            backgroundColor: onPressed == null ? const Color(0xFF333333) : const Color(0xFFB71C1C),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
           ),
           child: const Text(
@@ -633,4 +739,24 @@ class _ReservationScreenState extends State<ReservationScreen> {
       ),
     );
   }
+}
+
+// ── GRID PAINTER ──────────────────────────────────
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.04)
+      ..strokeWidth = 1;
+    const step = 40.0;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GridPainter oldDelegate) => false;
 }

@@ -44,7 +44,7 @@ namespace DineoAPP.Controllers
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (restaurant == null)
-                return NotFound(new { message = "Restaurantul nu există!" });
+                return NotFound(new { message = "Restaurant not found!" });
 
             return Ok(restaurant);
         }
@@ -73,7 +73,7 @@ namespace DineoAPP.Controllers
             return Ok(restaurants);
         }
 
-        // POST: api/restaurants (doar pentru admin)
+        // POST: api/restaurants
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Restaurant restaurant)
         {
@@ -82,5 +82,62 @@ namespace DineoAPP.Controllers
             await _context.SaveChangesAsync();
             return Ok(restaurant);
         }
+
+        // PUT: api/restaurants/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] Restaurant updated)
+        {
+            var restaurant = await _context.Restaurants.FindAsync(id);
+
+            if (restaurant == null)
+                return NotFound(new { message = "Restaurant not found!" });
+
+            restaurant.Name        = updated.Name;
+            restaurant.Description = updated.Description;
+            restaurant.CuisineType = updated.CuisineType;
+            restaurant.Rating      = updated.Rating;
+            restaurant.Address     = updated.Address;
+            restaurant.ImageUrl    = updated.ImageUrl;
+            restaurant.PhoneNumber = updated.PhoneNumber;
+            restaurant.Latitude    = updated.Latitude;
+            restaurant.Longitude   = updated.Longitude;
+
+            await _context.SaveChangesAsync();
+            return Ok(restaurant);
+        }
+
+        // DELETE: api/restaurants/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var restaurant = await _context.Restaurants.FindAsync(id);
+
+            if (restaurant == null)
+                return NotFound(new { message = "Restaurant not found!" });
+
+            _context.Restaurants.Remove(restaurant);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Restaurant deleted successfully!" });
+        }
+
+        // POST: api/restaurants/5/login  ← Restaurant Admin login
+        [HttpPost("{id}/login")]
+        public async Task<IActionResult> Login(int id, [FromBody] RestaurantLoginRequest request)
+        {
+            var restaurant = await _context.Restaurants.FindAsync(id);
+
+            if (restaurant == null)
+                return NotFound(new { message = "Restaurant not found!" });
+
+            if (restaurant.RestaurantPassword != request.Password)
+                return Ok(new { success = false });
+
+            return Ok(new { success = true, restaurantId = id, name = restaurant.Name });
+        }
+    }
+
+    public class RestaurantLoginRequest
+    {
+        public string Password { get; set; } = string.Empty;
     }
 }

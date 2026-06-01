@@ -16,6 +16,30 @@ namespace DineoAPP.Controllers
             _context = context;
         }
 
+        // GET: api/reservations/all
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll()
+        {
+            var reservations = await _context.Reservations
+                .Include(r => r.Restaurant)
+                .Include(r => r.Table)
+                .OrderByDescending(r => r.Date)
+                .Select(r => new {
+                    r.Id,
+                    r.UserId,
+                    r.RestaurantId,
+                    RestaurantName = r.Restaurant != null ? r.Restaurant.Name : "—",
+                    r.Date,
+                    Time = r.Time.ToString(@"hh\:mm"),
+                    r.GuestCount,
+                    r.Status,
+                    TableNumber = r.Table != null ? r.Table.TableNumber : 0
+                })
+                .ToListAsync();
+
+            return Ok(reservations);
+        }
+
         // GET: api/reservations/user/{userId}
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetUserReservations(int userId)
@@ -52,7 +76,8 @@ namespace DineoAPP.Controllers
                 .Where(r => r.RestaurantId == restaurantId &&
                             r.Date.Date == date.Date &&
                             r.Time == TimeSpan.Parse(time) &&
-                            r.Status != "Cancelled")
+                            r.Status != "Cancelled" &&
+                            r.Status != "Rejected")
                 .Select(r => r.TableId)
                 .ToListAsync();
 
@@ -76,64 +101,131 @@ namespace DineoAPP.Controllers
 
         // POST: api/reservations
         [HttpPost]
-public async Task<IActionResult> CreateReservation([FromBody] CreateReservationRequest request)
-{
-    var table = await _context.Tables.FindAsync(request.TableId);
-    if (table == null)
-        return NotFound(new { message = "Table not found" });
+        public async Task<IActionResult> CreateReservation([FromBody] CreateReservationRequest request)
+        {
+            var table = await _context.Tables.FindAsync(request.TableId);
+            if (table == null)
+                return NotFound(new { message = "Table not found" });
 
-    var exists = await _context.Reservations
-        .AnyAsync(r => r.TableId == request.TableId &&
-                       r.Date.Date == request.Date.Date &&
-                       r.Time == request.Time &&
-                       r.Status != "Cancelled");
+            var exists = await _context.Reservations
+                .AnyAsync(r => r.TableId == request.TableId &&
+                               r.Date.Date == request.Date.Date &&
+                               r.Time == request.Time &&
+                               r.Status != "Cancelled" &&
+                               r.Status != "Rejected");
 
-    if (exists)
-        return BadRequest(new { message = "Table already reserved for this time" });
+            if (exists)
+                return BadRequest(new { message = "Table already reserved for this time" });
 
-    var reservation = new Reservation
-    {
-        UserId = request.UserId,
-        RestaurantId = request.RestaurantId,
-        TableId = request.TableId,
-        Date = request.Date,
-        Time = request.Time,
-        GuestCount = request.GuestCount,
-        Status = "Confirmed",
-        CreatedAt = DateTime.UtcNow
-    };
+            var reservation = new Reservation
+            {
+                UserId       = request.UserId,
+                RestaurantId = request.RestaurantId,
+                TableId      = request.TableId,
+                Date         = request.Date,
+                Time         = request.Time,
+                GuestCount   = request.GuestCount,
+                Status       = "Pending",
+                CreatedAt    = DateTime.UtcNow
+            };
 
-    _context.Reservations.Add(reservation);
-    await _context.SaveChangesAsync();
+            _context.Reservations.Add(reservation);
+            await _context.SaveChangesAsync();
 
-    // Fetch restaurant name
-    var restaurant = await _context.Restaurants.FindAsync(request.RestaurantId);
-    var restaurantName = restaurant?.Name ?? "restaurant";
+            var restaurant = await _context.Restaurants.FindAsync(request.RestaurantId);
+            var restaurantName = restaurant?.Name ?? "restaurant";
 
-    // Notificare Reservation Confirmed
-    _context.Notifications.Add(new Notification
-    {
-        UserId = request.UserId,
-        Title = "Reservation Confirmed! 🎉",
-        Message = $"Your table at {restaurantName} is confirmed for {request.Date:MMM dd} at {request.Time:hh\\:mm}.",
-        IsRead = false,
-        CreatedAt = DateTime.UtcNow
-    });
+            // Notificare Pending
+            _context.Notifications.Add(new Notification
+            {
+                UserId    = request.UserId,
+                Title     = "Reservation Pending ⏳",
+                Message   = $"Your reservation at {restaurantName} for {request.Date:MMM dd} at {request.Time:hh\\:mm} is awaiting confirmation.",
+                IsRead    = false,
+                CreatedAt = DateTime.UtcNow
+            });
 
-    // Notificare Review Reminder — programata pentru dupa rezervare
-    _context.Notifications.Add(new Notification
-    {
-        UserId = request.UserId,
-        Title = "How was your experience? ⭐",
-        Message = $"You visited {restaurantName}! Leave a review and help others discover it.",
-        IsRead = false,
-        CreatedAt = request.Date.Add(request.Time).AddHours(2)
-    });
+            await _context.SaveChangesAsync();
 
-    await _context.SaveChangesAsync();
+            return Ok(new { message = "Reservation submitted! Awaiting confirmation.", reservationId = reservation.Id });
+        }
 
-    return Ok(new { message = "Reservation confirmed!", reservationId = reservation.Id });
-}
+        // PUT: api/reservations/{id}/approve
+        [HttpPut("{id}/approve")]
+        public async Task<IActionResult> Approve(int id)
+        {
+            var reservation = await _context.Reservations
+                .Include(r => r.Restaurant)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (reservation == null)
+                return NotFound(new { message = "Reservation not found!" });
+
+            reservation.Status = "Confirmed";
+            await _context.SaveChangesAsync();
+
+            var restaurantName = reservation.Restaurant?.Name ?? "restaurant";
+
+            // Notificare Confirmed
+            _context.Notifications.Add(new Notification
+            {
+                UserId    = reservation.UserId,
+                Title     = "Reservation Confirmed! 🎉",
+                Message   = $"Your table at {restaurantName} is confirmed for {reservation.Date:MMM dd} at {reservation.Time:hh\\:mm}.",
+                IsRead    = false,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Reservation approved!" });
+        }
+
+        // PUT: api/reservations/{id}/reject
+        [HttpPut("{id}/reject")]
+        public async Task<IActionResult> Reject(int id, [FromBody] RejectReservationRequest request)
+        {
+            var reservation = await _context.Reservations
+                .Include(r => r.Restaurant)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (reservation == null)
+                return NotFound(new { message = "Reservation not found!" });
+
+            reservation.Status = "Rejected";
+            await _context.SaveChangesAsync();
+
+            var restaurantName = reservation.Restaurant?.Name ?? "restaurant";
+
+            // Notificare Rejected cu motiv
+            _context.Notifications.Add(new Notification
+            {
+                UserId    = reservation.UserId,
+                Title     = "Reservation Not Available 😔",
+                Message   = $"Your reservation at {restaurantName} on {reservation.Date:MMM dd} could not be confirmed. Reason: {request.Reason}",
+                IsRead    = false,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Reservation rejected. User notified." });
+        }
+
+        // PUT: api/reservations/{id}/cancel
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var reservation = await _context.Reservations.FindAsync(id);
+
+            if (reservation == null)
+                return NotFound(new { message = "Reservation not found!" });
+
+            reservation.Status = "Cancelled";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Reservation cancelled successfully!" });
+        }
     }
 
     public class CreateReservationRequest
@@ -144,5 +236,10 @@ public async Task<IActionResult> CreateReservation([FromBody] CreateReservationR
         public DateTime Date { get; set; }
         public TimeSpan Time { get; set; }
         public int GuestCount { get; set; }
+    }
+
+    public class RejectReservationRequest
+    {
+        public string Reason { get; set; } = string.Empty;
     }
 }

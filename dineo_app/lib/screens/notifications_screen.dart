@@ -54,16 +54,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr).toLocal();
-    final now = DateTime.now();
-    final diff = now.difference(date);
+  // Adauga Z daca nu exista ca sa foreze UTC parsing
+  final utcStr = dateStr.endsWith('Z') ? dateStr : '${dateStr}Z';
+  final date = DateTime.parse(utcStr).toLocal();
+  final now = DateTime.now();
+  final diff = now.difference(date);
 
-    if (diff.inMinutes < 1) return "Just now";
-    if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
-    if (diff.inHours < 24) return "${diff.inHours}h ago";
-    if (diff.inDays < 7) return "${diff.inDays}d ago";
-    return "${date.day}/${date.month}/${date.year}";
-  }
+  if (diff.inMinutes < 1) return "Just now";
+  if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
+  if (diff.inHours < 24) return "${diff.inHours}h ago";
+  if (diff.inDays < 7) return "${diff.inDays}d ago";
+  return "${date.day}/${date.month}/${date.year}";
+}
 
   IconData _getIcon(String title) {
     final t = title.toLowerCase();

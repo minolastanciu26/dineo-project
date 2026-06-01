@@ -4,6 +4,7 @@ using DineoAPP.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DineoAPP.Migrations
 {
     [DbContext(typeof(DineoContext))]
-    partial class DineoContextModelSnapshot : ModelSnapshot
+    [Migration("20260530165852_AddRestaurantPassword")]
+    partial class AddRestaurantPassword
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -98,48 +101,6 @@ namespace DineoAPP.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("FavouriteItems");
-                });
-
-            modelBuilder.Entity("DineoAPP.Models.FloorDecor", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<double>("Height")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Icon")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RestaurantId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("Width")
-                        .HasColumnType("float");
-
-                    b.Property<double>("X")
-                        .HasColumnType("float");
-
-                    b.Property<double>("Y")
-                        .HasColumnType("float");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RestaurantId");
-
-                    b.ToTable("FloorDecors");
                 });
 
             modelBuilder.Entity("DineoAPP.Models.MenuCategory", b =>
@@ -409,9 +370,6 @@ namespace DineoAPP.Migrations
                         .HasColumnType("float")
                         .HasDefaultValue(0.0);
 
-                    b.Property<string>("RestaurantPassword")
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.ToTable("Restaurants");
@@ -608,17 +566,6 @@ namespace DineoAPP.Migrations
                     b.Navigation("MenuItem");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DineoAPP.Models.FloorDecor", b =>
-                {
-                    b.HasOne("DineoAPP.Models.Restaurant", "Restaurant")
-                        .WithMany()
-                        .HasForeignKey("RestaurantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Restaurant");
                 });
 
             modelBuilder.Entity("DineoAPP.Models.MenuCategory", b =>

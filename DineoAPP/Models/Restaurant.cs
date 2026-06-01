@@ -13,6 +13,7 @@
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string? RestaurantPassword { get; set; }
 
         // Navigation properties
         public ICollection<MenuCategory> MenuCategories { get; set; } = new List<MenuCategory>();

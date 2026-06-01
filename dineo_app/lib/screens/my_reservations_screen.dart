@@ -535,27 +535,28 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
               ),
             ],
 
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _addToGoogleCalendar(r),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFB71C1C)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                icon: const Icon(Icons.calendar_month,
-                    color: Color(0xFFB71C1C), size: 16),
-                label: const Text(
-                  "Add to Google Calendar",
-                  style: TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
-                ),
-              ),
-            ),
+            if (status.toLowerCase() == 'confirmed') ...[
+  const SizedBox(height: 12),
+  SizedBox(
+    width: double.infinity,
+    child: OutlinedButton.icon(
+      onPressed: () => _addToGoogleCalendar(r),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: Color(0xFFB71C1C)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+      ),
+      icon: const Icon(Icons.calendar_month,
+          color: Color(0xFFB71C1C), size: 16),
+      label: const Text(
+        "Add to Google Calendar",
+        style: TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
+      ),
+    ),
+  ),
+],
           ],
         ),
       ),

@@ -27,6 +27,7 @@ namespace DineoAPP.Controllers
                 .Select(r => new
                 {
                     r.Id,
+                    r.UserId,
                     r.Rating,
                     r.Comment,
                     r.CreatedAt,
@@ -72,17 +73,16 @@ namespace DineoAPP.Controllers
 
             var review = new Review
             {
-                UserId = request.UserId,
+                UserId       = request.UserId,
                 RestaurantId = request.RestaurantId,
-                Rating = request.Rating,
-                Comment = request.Comment,
-                CreatedAt = DateTime.UtcNow
+                Rating       = request.Rating,
+                Comment      = request.Comment,
+                CreatedAt    = DateTime.UtcNow
             };
 
             _context.Reviews.Add(review);
             await _context.SaveChangesAsync();
 
-            // Update restaurant average rating
             var allReviews = await _context.Reviews
                 .Where(r => r.RestaurantId == request.RestaurantId)
                 .ToListAsync();
@@ -99,10 +99,21 @@ namespace DineoAPP.Controllers
 
         // DELETE: api/reviews/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReview(int id, [FromQuery] int userId)
+        public async Task<IActionResult> DeleteReview(int id, [FromQuery] int? userId)
         {
-            var review = await _context.Reviews
-                .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+            Review? review;
+
+            if (userId.HasValue)
+            {
+                // Regular user — can only delete their own reviews
+                review = await _context.Reviews
+                    .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId.Value);
+            }
+            else
+            {
+                // Admin — can delete any review
+                review = await _context.Reviews.FindAsync(id);
+            }
 
             if (review == null)
                 return NotFound(new { message = "Review not found" });
@@ -110,7 +121,7 @@ namespace DineoAPP.Controllers
             _context.Reviews.Remove(review);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Review deleted" });
+            return Ok(new { message = "Review deleted successfully!" });
         }
     }
 

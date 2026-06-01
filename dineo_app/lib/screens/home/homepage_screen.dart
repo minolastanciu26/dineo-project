@@ -202,32 +202,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
                           textInputAction: TextInputAction.search,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RestaurantsScreen(
-                                initialSearch: ''),
-                          ),
-                        ),
-                        child: Container(
-                          margin: const EdgeInsets.all(6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFB71C1C),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            "Filter",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),

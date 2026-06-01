@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DINEO — Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg:#121212; --surface:#1C1C1E; --surface2:#242428; --border:#2A2A2E;
+  --red:#B71C1C; --red-light:#E53935; --red-glow:rgba(183,28,28,.25);
+  --text:#F0F0F0; --muted:#888;
+  --font-head:'Bebas Neue',sans-serif; --font-body:'Montserrat',sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --sidebar-w:220px; --radius:8px; --transition:.18s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:14px;}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+::-webkit-scrollbar-thumb:hover{background:var(--red);}
+
+/* ══ LANDING ══ */
+#landing{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
+#landing.hidden{display:none;}
+.landing-box{width:100%;max-width:460px;padding:48px 40px;background:var(--surface);border:1px solid var(--border);border-radius:16px;text-align:center;animation:slideUp .3s ease;}
+.landing-box img{width:190px;margin-bottom:6px;}
+.landing-box .sub{font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:36px;display:block;}
+.landing-box h2{font-family:var(--font-head);font-size:1.4rem;letter-spacing:1.5px;margin-bottom:8px;color:var(--muted);}
+.landing-box p{font-size:.85rem;color:var(--muted);margin-bottom:28px;}
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.role-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:24px 16px;cursor:pointer;transition:var(--transition);text-align:center;}
+.role-card:hover{border-color:var(--red-light);background:rgba(183,28,28,.08);}
+.role-card .icon{font-size:2rem;margin-bottom:10px;}
+.role-card .title{font-family:var(--font-head);font-size:1.1rem;letter-spacing:1px;margin-bottom:4px;}
+.role-card .desc{font-size:.75rem;color:var(--muted);}
+
+/* ══ LOGIN SCREENS ══ */
+#superadmin-login,#restadmin-login{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:9999;}
+#superadmin-login.show,#restadmin-login.show{display:flex;}
+.login-box{width:100%;max-width:420px;padding:48px 40px;background:var(--surface);border:1px solid var(--border);border-radius:16px;text-align:center;animation:slideUp .3s ease;}
+.login-box img{width:170px;margin-bottom:6px;}
+.login-box .sub{font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:28px;display:block;}
+.login-box h2{font-family:var(--font-head);font-size:1.4rem;letter-spacing:1.5px;margin-bottom:20px;}
+.login-error{background:rgba(183,28,28,.15);border:1px solid rgba(183,28,28,.4);border-radius:var(--radius);color:#EF9A9A;font-size:.82rem;padding:10px 14px;margin-bottom:14px;display:none;}
+.login-error.show{display:block;}
+.back-link{color:var(--muted);font-size:.8rem;cursor:pointer;margin-top:16px;display:inline-block;transition:var(--transition);}
+.back-link:hover{color:var(--text);}
+
+/* ══ PASSWORD TOGGLE ══ */
+.pwd-input-wrap{position:relative;display:flex;align-items:center;}
+.pwd-input-wrap .form-control{padding-right:42px;}
+.pwd-toggle{position:absolute;right:10px;background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;display:flex;align-items:center;transition:var(--transition);}
+.pwd-toggle:hover{color:var(--text);}
+
+/* ══ SUPER ADMIN APP ══ */
+#superadmin-app{display:none;width:100%;}
+#superadmin-app.show{display:flex;}
+
+/* ══ SIDEBAR ══ */
+#sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:8px;}
+.sidebar-logo img{width:160px;height:auto;filter:drop-shadow(0 2px 8px rgba(183,28,28,.4));}
+.sidebar-logo .sub{font-size:.68rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;font-weight:600;}
+nav{flex:1;padding:16px 0;}
+.nav-section{font-size:.65rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);padding:14px 20px 6px;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:11px;padding:11px 20px;cursor:pointer;color:#aaa;font-size:.88rem;font-weight:400;border-left:3px solid transparent;transition:var(--transition);user-select:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--text);border-left-color:var(--red-light);background:linear-gradient(90deg,rgba(183,28,28,.15),transparent);font-weight:600;}
+.nav-item .icon{width:17px;height:17px;flex-shrink:0;}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:.75rem;color:var(--muted);}
+.api-indicator{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.dot.online{background:#4CAF50;box-shadow:0 0 6px #4CAF50;}
+.dot.offline{background:#f44336;}
+
+/* ══ MAIN ══ */
+#main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:var(--font-head);font-size:1.6rem;letter-spacing:1.5px;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.content{padding:28px;flex:1;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ══ STATS — clickable ══ */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:var(--transition);cursor:pointer;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--red);transform:scaleX(0);transition:var(--transition);}
+.stat-card:hover::before{transform:scaleX(1);}
+.stat-card:hover{border-color:#3a3a3e;transform:translateY(-2px);}
+.stat-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:500;}
+.stat-card .value{font-family:var(--font-head);font-size:2.4rem;letter-spacing:1px;margin-top:6px;}
+.stat-card .hint{font-size:.7rem;color:var(--red-light);margin-top:4px;}
+
+/* ══ BELL ══ */
+.bell-wrap{position:relative;cursor:pointer;}
+.bell-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:50%;transition:var(--transition);display:flex;align-items:center;}
+.bell-btn:hover{color:var(--text);background:rgba(255,255,255,.06);}
+.bell-badge{position:absolute;top:2px;right:2px;background:var(--red-light);color:#fff;font-size:.6rem;font-weight:700;border-radius:99px;min-width:16px;height:16px;display:none;align-items:center;justify-content:center;padding:0 3px;}
+.bell-badge.show{display:flex;}
+.notif-dropdown{position:absolute;top:38px;right:0;width:320px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:200;display:none;overflow:hidden;}
+.notif-dropdown.open{display:block;animation:slideUp .15s ease;}
+.notif-header{padding:14px 16px;border-bottom:1px solid var(--border);font-family:var(--font-head);font-size:1rem;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;}
+.notif-list{max-height:360px;overflow-y:auto;}
+.notif-item{padding:12px 16px;border-bottom:1px solid var(--border);transition:var(--transition);cursor:pointer;}
+.notif-item:hover{background:rgba(255,255,255,.04);}
+.notif-item.unread{background:rgba(183,28,28,.07);}
+.notif-item .ntitle{font-size:.85rem;font-weight:600;margin-bottom:3px;}
+.notif-item .nmeta{font-size:.75rem;color:var(--muted);}
+.notif-empty{padding:32px;text-align:center;color:var(--muted);font-size:.85rem;}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:var(--radius);cursor:pointer;font-size:.8rem;font-family:var(--font-body);transition:var(--transition);}
+.logout-btn:hover{color:var(--text);border-color:#555;}
+
+/* ══ TABLE ══ */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.table-header h2{font-family:var(--font-head);font-size:1.3rem;letter-spacing:1px;}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;flex:1;max-width:300px;}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-family:var(--font-body);font-size:.88rem;width:100%;}
+.search-box input::placeholder{color:var(--muted);}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--surface2);}
+thead th{text-align:left;padding:11px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;white-space:nowrap;}
+tbody tr{border-top:1px solid var(--border);transition:var(--transition);}
+tbody tr:hover{background:rgba(255,255,255,.025);}
+tbody td{padding:12px 16px;font-size:.88rem;vertical-align:middle;}
+.mono{font-family:var(--font-mono);font-size:.8rem;color:var(--muted);}
+
+/* ══ BUTTONS ══ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font-body);font-size:.85rem;font-weight:600;cursor:pointer;border:none;outline:none;transition:var(--transition);white-space:nowrap;}
+.btn-primary{background:var(--red);color:#fff;}
+.btn-primary:hover{background:var(--red-light);box-shadow:0 0 16px var(--red-glow);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:#555;}
+.btn-danger{background:transparent;color:#f44336;border:1px solid rgba(244,67,54,.3);padding:5px 10px;font-size:.78rem;}
+.btn-danger:hover{background:rgba(244,67,54,.12);}
+.btn-edit{background:transparent;color:#90CAF9;border:1px solid rgba(144,202,249,.3);padding:5px 10px;font-size:.78rem;}
+.btn-edit:hover{background:rgba(144,202,249,.1);}
+.btn-success{background:transparent;color:#81C784;border:1px solid rgba(129,199,132,.3);padding:5px 10px;font-size:.78rem;}
+.btn-success:hover{background:rgba(129,199,132,.1);}
+.btn-sm{padding:5px 10px;font-size:.78rem;}
+.btn svg{width:14px;height:14px;flex-shrink:0;}
+
+/* ══ BADGES ══ */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:.7rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.badge-confirmed{background:rgba(46,125,50,.2);color:#81C784;}
+.badge-cancelled{background:rgba(183,28,28,.2);color:#EF9A9A;}
+.badge-pending{background:rgba(245,127,23,.2);color:#FFE082;}
+.badge-rejected{background:rgba(100,100,100,.2);color:#aaa;}
+.badge-offer{background:rgba(183,28,28,.2);color:var(--red-light);border:1px solid rgba(183,28,28,.4);}
+.stars{color:#FFC107;letter-spacing:1px;}
+
+/* ══ MODAL ══ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease;}
+.modal-title{font-family:var(--font-head);font-size:1.5rem;letter-spacing:1px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:4px;transition:var(--transition);}
+.modal-close:hover{color:var(--text);}
+
+/* ══ FORM ══ */
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:6px;}
+.form-control{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:.9rem;padding:9px 12px;outline:none;transition:var(--transition);}
+.form-control:focus{border-color:var(--red);box-shadow:0 0 0 3px var(--red-glow);}
+select.form-control option{background:var(--surface2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+
+/* ══ PASSWORD REVEAL ══ */
+.password-reveal{background:rgba(183,28,28,.1);border:1px solid rgba(183,28,28,.35);border-radius:var(--radius);padding:16px;margin-top:16px;display:none;}
+.password-reveal.show{display:block;}
+.pwd-label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--red-light);font-weight:600;margin-bottom:8px;}
+.pwd{font-family:var(--font-mono);font-size:1.4rem;letter-spacing:4px;color:var(--text);margin-bottom:8px;}
+.pwd-note{font-size:.75rem;color:var(--muted);}
+
+/* ══ OFFER CARD ══ */
+.offer-card{background:linear-gradient(135deg,var(--surface) 0%,rgba(183,28,28,.12) 100%);border:1px solid rgba(183,28,28,.3);border-radius:12px;padding:28px;margin-bottom:24px;display:flex;align-items:center;gap:24px;}
+.offer-icon{font-size:3rem;}
+.offer-info .label{font-size:.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--red-light);font-weight:600;}
+.offer-info .name{font-family:var(--font-head);font-size:2rem;letter-spacing:1px;margin-top:4px;}
+.offer-info .meta{font-size:.82rem;color:var(--muted);margin-top:4px;}
+.offer-actions{margin-left:auto;}
+
+/* ══ REVIEW CARD ══ */
+.review-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;transition:var(--transition);}
+.review-card:hover{border-color:#3a3a3e;}
+.review-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.review-meta{font-size:.78rem;color:var(--muted);}
+.review-text{font-size:.88rem;line-height:1.6;color:#ccc;}
+
+/* ══ FILTER ══ */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:.83rem;padding:7px 10px;outline:none;cursor:pointer;}
+.filter-select:focus{border-color:var(--red);}
+
+/* ══ RESTAURANT ADMIN APP ══ */
+#restadmin-app{display:none;width:100%;min-height:100vh;flex-direction:column;}
+#restadmin-app.show{display:flex;}
+.ra-topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:50;}
+.ra-topbar-left{display:flex;align-items:center;gap:16px;}
+.ra-topbar-left img{height:36px;}
+.ra-restaurant-name{font-family:var(--font-head);font-size:1.4rem;letter-spacing:1.5px;color:var(--red-light);}
+.ra-topbar-right{display:flex;align-items:center;gap:12px;}
+.ra-content{padding:28px;flex:1;}
+.ra-tabs{display:flex;gap:4px;margin-bottom:28px;border-bottom:1px solid var(--border);}
+.ra-tab{padding:11px 20px;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:var(--transition);margin-bottom:-1px;}
+.ra-tab:hover{color:var(--text);}
+.ra-tab.active{color:var(--text);border-bottom-color:var(--red-light);}
+.ra-tab-content{display:none;}
+.ra-tab-content.active{display:block;}
+
+/* ══ DRAG & DROP TABLE LAYOUT ══ */
+.floor-canvas{position:relative;width:100%;height:560px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+.floor-canvas .grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:40px 40px;}
+.table-node{position:absolute;width:64px;height:64px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;user-select:none;transition:border-color .15s,box-shadow .15s;font-size:.7rem;font-weight:600;}
+.table-node:hover{border-color:var(--red-light);box-shadow:0 0 12px var(--red-glow);}
+.table-node.dragging{cursor:grabbing;border-color:var(--red-light);box-shadow:0 0 20px var(--red-glow);z-index:99;opacity:.9;}
+.table-node .tn{font-family:var(--font-head);font-size:1rem;letter-spacing:.5px;color:var(--text);}
+.table-node .ts{font-size:.65rem;color:var(--muted);}
+.floor-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.floor-hint{font-size:.75rem;color:var(--muted);margin-left:auto;}
+/* Decor blocks */
+.decor-palette{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);}
+.decor-palette-label{font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;width:100%;margin-bottom:4px;}
+.decor-chip{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:grab;user-select:none;font-size:.78rem;transition:var(--transition);}
+.decor-chip:hover{border-color:var(--red-light);color:var(--text);}
+.decor-chip:active{cursor:grabbing;}
+.decor-node{position:absolute;background:var(--surface);border:1.5px solid #444;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;user-select:none;gap:2px;transition:border-color .15s;}
+.decor-node:hover{border-color:var(--red-light);}
+.decor-node.dragging{cursor:grabbing;border-color:var(--red-light);z-index:98;opacity:.9;}
+.decor-node .di{font-size:1.1rem;}
+.decor-node .dl{font-size:.6rem;color:var(--muted);text-align:center;line-height:1.2;}
+
+/* ══ MENU ITEM CARD ══ */
+.menu-item-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--border);}
+.menu-item-info .item-name{font-size:.88rem;font-weight:500;}
+.menu-item-info .item-price{font-family:var(--font-mono);font-size:.82rem;color:var(--red-light);margin-top:2px;}
+.menu-item-info .item-desc{font-size:.75rem;color:var(--muted);margin-top:2px;}
+.menu-item-actions{display:flex;gap:6px;flex-shrink:0;}
+
+/* ══ TOAST ══ */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--red-light);border-radius:var(--radius);padding:12px 16px;font-size:.85rem;min-width:260px;animation:slideIn .25s ease;display:flex;align-items:center;gap:10px;}
+.toast.success{border-left-color:#4CAF50;}
+.toast.error{border-left-color:#f44336;}
+
+/* ══ CONFIRM ══ */
+#confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:600;align-items:center;justify-content:center;}
+#confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:380px;width:90%;text-align:center;animation:slideUp .2s ease;}
+.confirm-box h3{font-family:var(--font-head);font-size:1.4rem;margin-bottom:8px;}
+.confirm-box p{color:var(--muted);font-size:.88rem;margin-bottom:24px;}
+.confirm-actions{display:flex;gap:10px;justify-content:center;}
+
+/* ══ LOADING / EMPTY ══ */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;gap:10px;color:var(--muted);}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-state .icon{font-size:2.5rem;margin-bottom:12px;}
+
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<!-- ══ LANDING ══ -->
+<div id="landing">
+  <div class="landing-box">
+    <img src="logo.png" alt="DINEO" />
+    <span class="sub">Admin Panel</span>
+    <h2>WHO ARE YOU?</h2>
+    <p>Select your role to continue</p>
+    <div class="role-cards">
+      <div class="role-card" onclick="showSuperAdminLogin()">
+        <div class="icon">🛡️</div>
+        <div class="title">Super Admin</div>
+        <div class="desc">Full platform access</div>
+      </div>
+      <div class="role-card" onclick="showRestAdminLogin()">
+        <div class="icon">🍽️</div>
+        <div class="title">Restaurant Admin</div>
+        <div class="desc">Manage your restaurant</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUPER ADMIN LOGIN ══ -->
+<div id="superadmin-login">
+  <div class="login-box">
+    <img src="logo.png" alt="DINEO" />
+    <span class="sub">Super Admin</span>
+    <h2>SIGN IN</h2>
+    <div class="login-error" id="sa-error">Incorrect password.</div>
+    <div class="form-group" style="text-align:left">
+      <label class="form-label">Password</label>
+      <div class="pwd-input-wrap"><input class="form-control" type="password" id="sa-password" placeholder="Enter super admin password" onkeydown="if(event.key==='Enter')doSuperLogin()" /><button class="pwd-toggle" type="button" onclick="togglePwd('sa-password',this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="doSuperLogin()">Login</button>
+    <div class="back-link" onclick="backToLanding()">← Back</div>
+  </div>
+</div>
+
+<!-- ══ RESTAURANT ADMIN LOGIN ══ -->
+<div id="restadmin-login">
+  <div class="login-box">
+    <img src="logo.png" alt="DINEO" />
+    <span class="sub">Restaurant Admin</span>
+    <h2>SIGN IN</h2>
+    <div class="login-error" id="ra-error">Incorrect password.</div>
+    <div class="form-group" style="text-align:left">
+      <label class="form-label">Select Restaurant</label>
+      <select class="form-control" id="ra-restaurant-select">
+        <option value="">— Select your restaurant —</option>
+        <option value="1">Caru cu Bere</option>
+        <option value="2">La Mama</option>
+        <option value="3">Vatra</option>
+        <option value="4">La Grande Belezza</option>
+        <option value="5">Trattoria Il Calcio</option>
+        <option value="6">Sushi One</option>
+        <option value="7">Nobu Bucharest</option>
+        <option value="8">The Burger Lab</option>
+        <option value="9">Hard Rock Cafe</option>
+        <option value="10">Carnivora</option>
+        <option value="11">Negroni</option>
+        <option value="12">Lacrimi și Sfinți</option>
+        <option value="13">Shift Pub</option>
+        <option value="14">Acuarela</option>
+        <option value="15">Beca's Kitchen</option>
+        <option value="16">Hanu lui Manuc</option>
+        <option value="17">Tapas Bar</option>
+        <option value="18">Le Bistro Francez</option>
+        <option value="19">Spice Garden</option>
+        <option value="20">Fratelli Social</option>
+      </select>
+    </div>
+    <div class="form-group" style="text-align:left">
+      <label class="form-label">Password</label>
+      <div class="pwd-input-wrap"><input class="form-control" type="password" id="ra-password" placeholder="Enter restaurant password" onkeydown="if(event.key==='Enter')doRestLogin()" /><button class="pwd-toggle" type="button" onclick="togglePwd('ra-password',this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="doRestLogin()">Login</button>
+    <div class="back-link" onclick="backToLanding()">← Back</div>
+  </div>
+</div>
+
+<!-- ══ SUPER ADMIN APP ══ -->
+<div id="superadmin-app">
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <img src="logo.png" alt="DINEO" />
+      <div class="sub">Super Admin</div>
+    </div>
+    <nav>
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="navigate('dashboard')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+      </div>
+      <div class="nav-section">Management</div>
+      <div class="nav-item" onclick="navigate('restaurants')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>Restaurants
+      </div>
+      <div class="nav-item" onclick="navigate('reservations')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Reservations
+      </div>
+      <div class="nav-item" onclick="navigate('users')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Users
+      </div>
+      <div class="nav-item" onclick="navigate('offer')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Monthly Offer
+      </div>
+      <div class="nav-item" onclick="navigate('reviews')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Reviews
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="api-indicator"><div class="dot" id="api-dot"></div><span id="api-status">Checking…</span></div>
+      <div style="margin-top:4px;font-size:.68rem">localhost:5177</div>
+    </div>
+  </aside>
+
+  <div id="main">
+    <header class="topbar">
+      <div class="topbar-title" id="page-title">DASHBOARD</div>
+      <div class="topbar-right">
+        <div class="bell-wrap">
+          <button class="bell-btn" onclick="toggleNotifs()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </button>
+          <div class="bell-badge" id="bell-badge">0</div>
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-header">Notifications<button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button></div>
+            <div class="notif-list" id="notif-list"><div class="notif-empty">No notifications</div></div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">Logout</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card" onclick="navigate('restaurants')">
+            <div class="label">Restaurants</div>
+            <div class="value" id="s-rest">—</div>
+            <div class="hint">↗ View all</div>
+          </div>
+          <div class="stat-card" onclick="navigate('users')">
+            <div class="label">Users</div>
+            <div class="value" id="s-users">—</div>
+            <div class="hint">↗ View all</div>
+          </div>
+          <div class="stat-card" onclick="navigate('reservations')">
+            <div class="label">Reservations</div>
+            <div class="value" id="s-reserv">—</div>
+            <div class="hint">↗ View all</div>
+          </div>
+          <div class="stat-card" onclick="navigate('reviews')">
+            <div class="label">Reviews</div>
+            <div class="value" id="s-reviews">—</div>
+            <div class="hint">↗ View all</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <h2>Recent Restaurants</h2>
+            <button class="btn btn-primary btn-sm" onclick="navigate('restaurants')">+ Add Restaurant</button>
+          </div>
+          <div id="dashboard-rest-table"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- RESTAURANTS -->
+      <div class="page" id="page-restaurants">
+        <div class="table-wrap">
+          <div class="table-header">
+            <h2>Restaurants</h2>
+            <div style="display:flex;gap:10px;align-items:center;flex:1;justify-content:flex-end;flex-wrap:wrap">
+              <div class="search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="rest-search" placeholder="Search name, cuisine…" oninput="filterRestaurants()" />
+              </div>
+              <button class="btn btn-primary" onclick="openRestaurantModal(null)">+ Add Restaurant</button>
+            </div>
+          </div>
+          <div id="restaurants-table"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- RESERVATIONS -->
+      <div class="page" id="page-reservations">
+        <div class="table-wrap">
+          <div class="table-header">
+            <h2>Reservations</h2>
+            <div class="filter-bar">
+              <select class="filter-select" id="filter-status" onchange="filterReservations()">
+                <option value="">All statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <select class="filter-select" id="filter-rest" onchange="filterReservations()"><option value="">All restaurants</option></select>
+            </div>
+          </div>
+          <div id="reservations-table"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="page" id="page-users">
+        <div class="table-wrap">
+          <div class="table-header">
+            <h2>Users</h2>
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="user-search" placeholder="Search by email…" oninput="filterUsers()" />
+            </div>
+          </div>
+          <div id="users-table"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- MONTHLY OFFER -->
+      <div class="page" id="page-offer">
+        <div id="current-offer-card"></div>
+        <div class="table-wrap">
+          <div class="table-header"><h2>Set Monthly Offer</h2></div>
+          <div id="offer-table"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- REVIEWS -->
+      <div class="page" id="page-reviews">
+        <div class="table-header" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0">
+          <h2 style="font-family:var(--font-head);font-size:1.3rem;letter-spacing:1px">Reviews</h2>
+          <div class="filter-bar">
+            <select class="filter-select" id="review-rest-filter" onchange="filterReviews()"><option value="">All restaurants</option></select>
+            <select class="filter-select" id="review-rating-filter" onchange="filterReviews()">
+              <option value="">All ratings</option>
+              <option value="5">★ 5</option><option value="4">★ 4</option>
+              <option value="3">★ 3</option><option value="2">★ 2</option><option value="1">★ 1</option>
+            </select>
+          </div>
+        </div>
+        <div id="reviews-list" style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:16px;background:var(--surface)">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESTAURANT ADMIN APP ══ -->
+<div id="restadmin-app">
+  <div class="ra-topbar">
+    <div class="ra-topbar-left">
+      <img src="logo.png" alt="DINEO" />
+      <div class="ra-restaurant-name" id="ra-rest-name">RESTAURANT</div>
+    </div>
+    <div class="ra-topbar-right">
+      <div class="bell-wrap">
+        <button class="bell-btn" onclick="toggleRaNotifs()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+        <div class="bell-badge" id="ra-bell-badge">0</div>
+        <div class="notif-dropdown" id="ra-notif-dropdown">
+          <div class="notif-header">Pending Reservations</div>
+          <div class="notif-list" id="ra-notif-list"><div class="notif-empty">No pending reservations</div></div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="ra-content">
+    <div class="ra-tabs">
+      <div class="ra-tab active" onclick="switchRaTab('ra-tab-reservations')">
+        Reservations
+        <span id="ra-pending-count" style="background:var(--red);color:#fff;border-radius:99px;padding:1px 7px;font-size:.7rem;margin-left:6px;display:none">0</span>
+      </div>
+      <div class="ra-tab" onclick="switchRaTab('ra-tab-details')">Details</div>
+      <div class="ra-tab" onclick="switchRaTab('ra-tab-menu')">Menu</div>
+      <div class="ra-tab" onclick="switchRaTab('ra-tab-tables')">Tables</div>
+    </div>
+
+    <!-- RESERVATIONS TAB -->
+    <div class="ra-tab-content active" id="ra-tab-reservations">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h2>Reservations</h2>
+          <select class="filter-select" id="ra-filter-status" onchange="filterRaReservations()">
+            <option value="">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div id="ra-reservations-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- DETAILS TAB -->
+    <div class="ra-tab-content" id="ra-tab-details">
+      <div class="table-wrap" style="padding:24px">
+        <div class="form-group"><label class="form-label">Name *</label><input class="form-control" id="ra-name" /></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Cuisine Type</label><input class="form-control" id="ra-cuisine" /></div>
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="ra-phone" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Address</label><input class="form-control" id="ra-address" /></div>
+        <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="ra-desc" rows="4"></textarea></div>
+        <div class="form-group"><label class="form-label">Image URL</label><input class="form-control" id="ra-img" /></div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="saveRaDetails()">Save Changes</button></div>
+      </div>
+    </div>
+
+    <!-- MENU TAB -->
+    <div class="ra-tab-content" id="ra-tab-menu">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px">Menu</h3>
+        <button class="btn btn-primary btn-sm" onclick="openAddCategoryModal()">+ Add Category</button>
+      </div>
+      <div id="ra-menu-list"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- TABLES TAB -->
+    <div class="ra-tab-content" id="ra-tab-tables">
+      <div class="floor-toolbar">
+        <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px">Table Layout</h3>
+        <button class="btn btn-primary btn-sm" onclick="openAddTableModal()">+ Add Table</button>
+        <button class="btn btn-success btn-sm" onclick="saveTablePositions()">💾 Save Positions</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllDecor()">🗑 Clear Decor</button>
+        <span class="floor-hint">Drag tables & decor elements • Right-click to delete</span>
+      </div>
+      <!-- Decor palette -->
+      <div class="decor-palette">
+        <div class="decor-palette-label">Decorative Elements — drag onto the canvas</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'door','🚪','Door',80,30)">🚪 Door</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'window','🪟','Window',100,24)">🪟 Window</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'bar','🍸','Bar',120,60)">🍸 Bar</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'restrooms','🚻','Restrooms',70,70)">🚻 Restrooms</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'stage','🎭','Stage',160,60)">🎭 Stage</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'terrace','🌿','Terrace',140,50)">🌿 Terrace</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'wall','🧱','Wall',120,20)">🧱 Wall</div>
+        <div class="decor-chip" draggable="true" ondragstart="startDecorDrag(event,'stairs','🛗','Stairs',60,60)">🛗 Stairs</div>
+      </div>
+      <div class="floor-canvas" id="floor-canvas"
+        ondragover="event.preventDefault()"
+        ondrop="dropDecorOnCanvas(event)">
+        <div class="grid-bg"></div>
+      </div>
+      <div id="ra-tables-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- ADD/EDIT RESTAURANT -->
+<div class="modal-overlay" id="rest-modal">
+  <div class="modal">
+    <div class="modal-title"><span id="rest-modal-title">ADD RESTAURANT</span><button class="modal-close" onclick="closeModal('rest-modal')">✕</button></div>
+    <div class="form-group"><label class="form-label">Name *</label><input class="form-control" id="r-name" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cuisine Type</label><input class="form-control" id="r-cuisine" /></div>
+      <div class="form-group"><label class="form-label">Rating (0–5)</label><input class="form-control" id="r-rating" type="number" min="0" max="5" step="0.1" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="r-phone" /></div>
+      <div class="form-group"><label class="form-label">Address</label><input class="form-control" id="r-address" /></div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="r-desc" rows="3"></textarea></div>
+    <div class="form-group"><label class="form-label">Image URL</label><input class="form-control" id="r-img" /></div>
+    <div class="password-reveal" id="pwd-reveal">
+      <div class="pwd-label">🔑 Restaurant Admin Password</div>
+      <div class="pwd" id="pwd-value"></div>
+      <div class="pwd-note">Copy this and send it to the restaurant manager. It will not be shown again.</div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('rest-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRestaurant()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CATEGORY -->
+<div class="modal-overlay" id="category-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title">ADD CATEGORY<button class="modal-close" onclick="closeModal('category-modal')">✕</button></div>
+    <div class="form-group"><label class="form-label">Category Name *</label><input class="form-control" id="cat-name" placeholder="e.g. Starters, Main Course, Desserts" onkeydown="if(event.key==='Enter')saveCategory()" /></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('category-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Add Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MENU ITEM -->
+<div class="modal-overlay" id="menuitem-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-title"><span id="menuitem-modal-title">ADD ITEM</span><button class="modal-close" onclick="closeModal('menuitem-modal')">✕</button></div>
+    <div class="form-group"><label class="form-label">Name *</label><input class="form-control" id="mi-name" placeholder="e.g. Grilled Salmon" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Price (RON) *</label><input class="form-control" id="mi-price" type="number" min="0" step="0.5" placeholder="0.00" /></div>
+      <div class="form-group"><label class="form-label">Available</label>
+        <select class="form-control" id="mi-available">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-control" id="mi-desc" placeholder="Short description…" /></div>
+    <div class="form-group"><label class="form-label">Image URL</label><input class="form-control" id="mi-img" placeholder="https://…" /></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('menuitem-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMenuItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TABLE -->
+<div class="modal-overlay" id="table-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title"><span id="table-modal-title">ADD TABLE</span><button class="modal-close" onclick="closeModal('table-modal')">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Table Number *</label><input class="form-control" id="t-number" type="number" min="1" /></div>
+      <div class="form-group"><label class="form-label">Seats *</label><input class="form-control" id="t-seats" type="number" min="1" max="20" /></div>
+    </div>
+    <div class="form-group"><label class="form-label">Floor</label><input class="form-control" id="t-floor" type="number" min="1" value="1" /></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('table-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTable()">Add Table</button>
+    </div>
+  </div>
+</div>
+
+<!-- REJECT RESERVATION -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">REJECT RESERVATION<button class="modal-close" onclick="closeModal('reject-modal')">✕</button></div>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">The user will receive a notification with this reason.</p>
+    <div class="form-group"><label class="form-label">Reason *</label><textarea class="form-control" id="reject-reason" rows="3" placeholder="e.g. Table unavailable due to maintenance…"></textarea></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('reject-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmReject()">Send & Reject</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <h3 id="confirm-title">Confirm?</h3>
+    <p id="confirm-msg">This action cannot be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = 'http://localhost:5177';
+const SUPER_PASSWORD = 'dineo2026';
+
+let state = {
+  restaurants:[], users:[], reservations:[], reviews:[],
+  currentOffer:null, editingRestId:null,
+  currentRestAdmin:null, rejectingReservationId:null,
+  notifications:[], raReservations:[],
+  editingMenuItemId:null, editingMenuItemCategoryId:null,
+  editingTableId:null, addingItemToCategoryId:null,
+  tables:[], dragState:null,
+};
+
+
+// ══ PASSWORD TOGGLE ══════════════════════════════════
+function togglePwd(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.innerHTML = isHidden
+    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  btn.style.color = isHidden ? 'var(--red-light)' : 'var(--muted)';
+}
+
+// ══ LANDING ══════════════════════════════════════════
+function showSuperAdminLogin(){
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('superadmin-login').classList.add('show');
+  setTimeout(()=>document.getElementById('sa-password').focus(),100);
+}
+function showRestAdminLogin(){
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('restadmin-login').classList.add('show');
+}
+function backToLanding(){
+  document.getElementById('landing').classList.remove('hidden');
+  document.getElementById('superadmin-login').classList.remove('show');
+  document.getElementById('restadmin-login').classList.remove('show');
+  document.getElementById('sa-error').classList.remove('show');
+  document.getElementById('ra-error').classList.remove('show');
+  document.getElementById('sa-password').value='';
+  document.getElementById('ra-password').value='';
+}
+
+// ══ SUPER ADMIN LOGIN ═════════════════════════════════
+function doSuperLogin(){
+  const pwd=document.getElementById('sa-password').value;
+  if(pwd===SUPER_PASSWORD){
+    document.getElementById('superadmin-login').classList.remove('show');
+    document.getElementById('superadmin-app').classList.add('show');
+    document.getElementById('sa-error').classList.remove('show');
+    checkApi(); loadDashboard(); startNotifPolling();
+  } else {
+    document.getElementById('sa-error').classList.add('show');
+    document.getElementById('sa-password').value='';
+  }
+}
+
+// ══ RESTAURANT ADMIN LOGIN ════════════════════════════
+async function doRestLogin(){
+  const restId=document.getElementById('ra-restaurant-select').value;
+  const pwd=document.getElementById('ra-password').value;
+  const err=document.getElementById('ra-error');
+  if(!restId){err.textContent='Please select your restaurant.';err.classList.add('show');return;}
+  if(!pwd){err.textContent='Please enter your password.';err.classList.add('show');return;}
+  try{
+    const res=await apiFetch(`/api/restaurants/${restId}/login`,{method:'POST',body:JSON.stringify({password:pwd})});
+    if(res.success){
+      err.classList.remove('show');
+      document.getElementById('restadmin-login').classList.remove('show');
+      document.getElementById('restadmin-app').classList.add('show');
+      const restaurant=await apiFetch(`/api/restaurants/${restId}`);
+      state.currentRestAdmin=restaurant;
+      document.getElementById('ra-rest-name').textContent=restaurant.name.toUpperCase();
+      document.getElementById('ra-name').value=restaurant.name||'';
+      document.getElementById('ra-cuisine').value=restaurant.cuisineType||'';
+      document.getElementById('ra-phone').value=restaurant.phoneNumber||'';
+      document.getElementById('ra-address').value=restaurant.address||'';
+      document.getElementById('ra-desc').value=restaurant.description||'';
+      document.getElementById('ra-img').value=restaurant.imageUrl||'';
+      loadRaReservations(); loadRaMenu(); loadRaTables(); startRaNotifPolling();
+    } else {
+      err.textContent='Incorrect password.';err.classList.add('show');
+      document.getElementById('ra-password').value='';
+    }
+  } catch{
+    err.textContent='Incorrect password.';err.classList.add('show');
+    document.getElementById('ra-password').value='';
+  }
+}
+
+// ══ LOGOUT ════════════════════════════════════════════
+function doLogout(){
+  document.getElementById('landing').classList.remove('hidden');
+  document.getElementById('superadmin-app').classList.remove('show');
+  document.getElementById('restadmin-app').classList.remove('show');
+  document.getElementById('sa-password').value='';
+  document.getElementById('ra-password').value='';
+  document.getElementById('ra-restaurant-select').value='';
+  state.currentRestAdmin=null;
+  if(state.raNotifInterval) clearInterval(state.raNotifInterval);
+}
+
+// ══ API ═══════════════════════════════════════════════
+async function apiFetch(path,opts={}){
+  const res=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});
+  if(!res.ok) throw new Error(await res.text());
+  const ct=res.headers.get('content-type')||'';
+  return ct.includes('json')?res.json():res.text();
+}
+async function checkApi(){
+  try{ await apiFetch('/api/restaurants'); document.getElementById('api-dot').classList.add('online'); document.getElementById('api-status').textContent='API Online'; }
+  catch{ document.getElementById('api-dot').classList.add('offline'); document.getElementById('api-status').textContent='API Offline'; }
+}
+
+// ══ TOAST ═════════════════════════════════════════════
+function toast(msg,type='info'){
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  el.innerHTML=`<span style="font-weight:700">${{success:'✓',error:'✕',info:'ℹ'}[type]||'ℹ'}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ══ CONFIRM ═══════════════════════════════════════════
+function showConfirm(title,msg,cb){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.getElementById('confirm-btn').onclick=()=>{closeConfirm();cb();};
+}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ══ HELPERS ═══════════════════════════════════════════
+function stars(r){const f=Math.round(r);return '★'.repeat(f)+'☆'.repeat(Math.max(0,5-f));}
+function emptyState(msg){return `<div class="empty-state"><div class="icon">📭</div><p>${msg}</p></div>`;}
+function errorState(msg){return `<div class="empty-state"><div class="icon">⚠️</div><p style="color:#f44336">Error: ${msg}</p></div>`;}
+function generatePassword(){const c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';return Array.from({length:8},()=>c[Math.floor(Math.random()*c.length)]).join('');}
+
+// ══ NOTIFICATIONS — SUPER ADMIN ═══════════════════════
+function startNotifPolling(){loadNotifications();setInterval(loadNotifications,30000);}
+async function loadNotifications(){
+  try{
+    const res=await apiFetch('/api/reservations/all').catch(()=>[]);
+    const pending=res.filter(r=>r.status==='Pending');
+    state.notifications=pending.map(r=>({id:r.id,title:`New reservation at ${r.restaurantName}`,meta:`User #${r.userId} — ${r.date?new Date(r.date).toLocaleDateString('en-GB'):'—'} ${r.time||''}`,unread:true}));
+    updateBell();
+  }catch{}
+}
+function updateBell(){
+  const count=state.notifications.filter(n=>n.unread).length;
+  const badge=document.getElementById('bell-badge');
+  badge.textContent=count; count>0?badge.classList.add('show'):badge.classList.remove('show');
+  const el=document.getElementById('notif-list');
+  if(!state.notifications.length){el.innerHTML='<div class="notif-empty">No pending reservations</div>';return;}
+  el.innerHTML=state.notifications.map(n=>`<div class="notif-item ${n.unread?'unread':''}" onclick="navigate('reservations');toggleNotifs()"><div class="ntitle">🔔 ${n.title}</div><div class="nmeta">${n.meta}</div></div>`).join('');
+}
+function toggleNotifs(){document.getElementById('notif-dropdown').classList.toggle('open');}
+function markAllRead(){state.notifications.forEach(n=>n.unread=false);updateBell();}
+
+// ══ NOTIFICATIONS — RESTAURANT ADMIN ══════════════════
+function startRaNotifPolling(){loadRaNotifications();state.raNotifInterval=setInterval(loadRaNotifications,20000);}
+async function loadRaNotifications(){
+  if(!state.currentRestAdmin)return;
+  try{
+    const all=await apiFetch('/api/reservations/all').catch(()=>[]);
+    const pending=all.filter(r=>r.restaurantId===state.currentRestAdmin.id&&r.status==='Pending');
+    const badge=document.getElementById('ra-bell-badge');
+    const countEl=document.getElementById('ra-pending-count');
+    badge.textContent=pending.length;
+    pending.length>0?badge.classList.add('show'):badge.classList.remove('show');
+    pending.length>0?(countEl.textContent=pending.length,countEl.style.display='inline'):countEl.style.display='none';
+    const el=document.getElementById('ra-notif-list');
+    if(!pending.length){el.innerHTML='<div class="notif-empty">No pending reservations</div>';return;}
+    el.innerHTML=pending.map(r=>`<div class="notif-item unread" onclick="switchRaTab('ra-tab-reservations');toggleRaNotifs()"><div class="ntitle">⏳ Reservation #${r.id}</div><div class="nmeta">User #${r.userId} — ${r.date?new Date(r.date).toLocaleDateString('en-GB'):'—'} ${r.time||''} — ${r.guestCount} guests</div></div>`).join('');
+  }catch{}
+}
+function toggleRaNotifs(){document.getElementById('ra-notif-dropdown').classList.toggle('open');}
+
+// ══ NAVIGATE ══════════════════════════════════════════
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')?.includes("'"+page+"'"))n.classList.add('active');});
+  const titles={dashboard:'DASHBOARD',restaurants:'RESTAURANTS',reservations:'RESERVATIONS',users:'USERS',offer:'MONTHLY OFFER',reviews:'REVIEWS'};
+  document.getElementById('page-title').textContent=titles[page]||page.toUpperCase();
+  const loaders={dashboard:loadDashboard,restaurants:loadRestaurants,reservations:loadReservations,users:loadUsers,offer:loadOffer,reviews:loadReviews};
+  if(loaders[page])loaders[page]();
+}
+
+// ══ DASHBOARD ═════════════════════════════════════════
+async function loadDashboard(){
+  try{
+    const [rests,users,reservations]=await Promise.all([apiFetch('/api/restaurants'),apiFetch('/api/users').catch(()=>[]),apiFetch('/api/reservations/all').catch(()=>[])]);
+    state.restaurants=rests;state.users=users;state.reservations=reservations;
+    let reviewCount=0;
+    await Promise.all(rests.map(async r=>{try{const rv=await apiFetch(`/api/reviews/restaurant/${r.id}`);reviewCount+=rv.length;}catch{}}));
+    document.getElementById('s-rest').textContent=rests.length;
+    document.getElementById('s-users').textContent=users.length||'—';
+    document.getElementById('s-reserv').textContent=reservations.length;
+    document.getElementById('s-reviews').textContent=reviewCount;
+    const t=document.getElementById('dashboard-rest-table');
+    if(!rests.length){t.innerHTML=emptyState('No restaurants');return;}
+    t.innerHTML=`<table><thead><tr><th>#</th><th>Name</th><th>Cuisine</th><th>Rating</th></tr></thead><tbody>
+      ${rests.slice(0,5).map(r=>`<tr><td><span class="mono">${r.id}</span></td><td><strong>${r.name}</strong></td><td>${r.cuisineType||'—'}</td><td><span class="stars">${stars(r.rating)}</span> <span class="mono">${r.rating?.toFixed(1)||'0.0'}</span></td></tr>`).join('')}
+    </tbody></table>`;
+  }catch(e){document.getElementById('dashboard-rest-table').innerHTML=errorState(e.message);}
+}
+
+// ══ RESTAURANTS ═══════════════════════════════════════
+async function loadRestaurants(){
+  try{const r=await apiFetch('/api/restaurants');state.restaurants=r;renderRestaurants(r);}
+  catch(e){document.getElementById('restaurants-table').innerHTML=errorState(e.message);}
+}
+function renderRestaurants(rests){
+  const el=document.getElementById('restaurants-table');
+  if(!rests.length){el.innerHTML=emptyState('No restaurants');return;}
+  el.innerHTML=`<table><thead><tr><th>#</th><th>Name</th><th>Cuisine</th><th>Rating</th><th>Address</th><th>Actions</th></tr></thead><tbody>
+    ${rests.map(r=>`<tr>
+      <td><span class="mono">${r.id}</span></td><td><strong>${r.name}</strong></td>
+      <td>${r.cuisineType||'—'}</td>
+      <td><span class="stars">${stars(r.rating)}</span> <span class="mono">${r.rating?.toFixed(1)||'0.0'}</span></td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.address||'—'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-edit" onclick="openRestaurantModal(${r.id})">Edit</button>
+        <button class="btn btn-danger" onclick='deleteRestaurant(${r.id},"${r.name.replace(/"/g,"'")}") '>Delete</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function filterRestaurants(){
+  const q=document.getElementById('rest-search').value.toLowerCase();
+  renderRestaurants(state.restaurants.filter(r=>r.name.toLowerCase().includes(q)||(r.cuisineType||'').toLowerCase().includes(q)));
+}
+function openRestaurantModal(id){
+  const r=id?state.restaurants.find(x=>x.id===id):null;
+  state.editingRestId=r?r.id:null;
+  document.getElementById('rest-modal-title').textContent=r?'EDIT RESTAURANT':'ADD RESTAURANT';
+  document.getElementById('r-name').value=r?.name||'';
+  document.getElementById('r-cuisine').value=r?.cuisineType||'';
+  document.getElementById('r-rating').value=r?.rating||'';
+  document.getElementById('r-address').value=r?.address||'';
+  document.getElementById('r-phone').value=r?.phoneNumber||'';
+  document.getElementById('r-desc').value=r?.description||'';
+  document.getElementById('r-img').value=r?.imageUrl||'';
+  document.getElementById('pwd-reveal').classList.remove('show');
+  document.getElementById('rest-modal').classList.add('open');
+}
+async function saveRestaurant(){
+  const name=document.getElementById('r-name').value.trim();
+  if(!name){toast('Name is required!','error');return;}
+  const body={name,cuisineType:document.getElementById('r-cuisine').value.trim(),rating:parseFloat(document.getElementById('r-rating').value)||0,address:document.getElementById('r-address').value.trim(),phoneNumber:document.getElementById('r-phone').value.trim(),description:document.getElementById('r-desc').value.trim(),imageUrl:document.getElementById('r-img').value.trim()};
+  try{
+    if(state.editingRestId){
+      await apiFetch(`/api/restaurants/${state.editingRestId}`,{method:'PUT',body:JSON.stringify({...body,id:state.editingRestId})});
+      toast('Restaurant updated!','success');closeModal('rest-modal');
+    } else {
+      const pwd=generatePassword();body.restaurantPassword=pwd;
+      await apiFetch('/api/restaurants',{method:'POST',body:JSON.stringify(body)});
+      document.getElementById('pwd-value').textContent=pwd;
+      document.getElementById('pwd-reveal').classList.add('show');
+      toast('Restaurant added!','success');
+    }
+    loadRestaurants();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+async function deleteRestaurant(id,name){
+  showConfirm('Delete restaurant?',`"${name}" will be permanently deleted.`,async()=>{
+    try{await apiFetch(`/api/restaurants/${id}`,{method:'DELETE'});toast('Deleted!','success');loadRestaurants();}
+    catch(e){toast('Error: '+e.message,'error');}
+  });
+}
+
+// ══ RESERVATIONS — SUPER ADMIN ════════════════════════
+async function loadReservations(){
+  try{
+    const res=await apiFetch('/api/reservations/all').catch(()=>[]);
+    state.reservations=res;
+    const restSet=[...new Set(res.map(r=>r.restaurantName).filter(Boolean))];
+    const sel=document.getElementById('filter-rest');
+    sel.innerHTML='<option value="">All restaurants</option>'+restSet.map(n=>`<option value="${n}">${n}</option>`).join('');
+    renderReservations(res);
+  }catch(e){document.getElementById('reservations-table').innerHTML=errorState(e.message);}
+}
+function renderReservations(list){
+  const el=document.getElementById('reservations-table');
+  if(!list.length){el.innerHTML=emptyState('No reservations');return;}
+  el.innerHTML=`<table><thead><tr><th>#</th><th>User</th><th>Restaurant</th><th>Date</th><th>Time</th><th>Guests</th><th>Status</th></tr></thead><tbody>
+    ${list.map(r=>`<tr><td><span class="mono">${r.id}</span></td><td><span class="mono">#${r.userId}</span></td><td>${r.restaurantName||'—'}</td><td>${r.date?new Date(r.date).toLocaleDateString('en-GB'):'—'}</td><td>${r.time||'—'}</td><td>${r.guestCount||'—'}</td><td><span class="badge badge-${(r.status||'').toLowerCase()}">${r.status||'—'}</span></td></tr>`).join('')}
+  </tbody></table>`;
+}
+function filterReservations(){
+  const status=document.getElementById('filter-status').value;
+  const rest=document.getElementById('filter-rest').value;
+  renderReservations(state.reservations.filter(r=>(!status||r.status===status)&&(!rest||r.restaurantName===rest)));
+}
+
+// ══ USERS ═════════════════════════════════════════════
+async function loadUsers(){
+  try{const u=await apiFetch('/api/users');state.users=u;renderUsers(u);}
+  catch(e){document.getElementById('users-table').innerHTML=errorState(e.message);}
+}
+function renderUsers(users){
+  const el=document.getElementById('users-table');
+  if(!users.length){el.innerHTML=emptyState('No users');return;}
+  el.innerHTML=`<table><thead><tr><th>#</th><th>Email</th></tr></thead><tbody>
+    ${users.map(u=>`<tr><td><span class="mono">${u.id}</span></td><td>${u.email}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+function filterUsers(){
+  const q=document.getElementById('user-search').value.toLowerCase();
+  renderUsers(state.users.filter(u=>u.email.toLowerCase().includes(q)));
+}
+
+// ══ MONTHLY OFFER ══════════════════════════════════════
+async function loadOffer(){
+  try{
+    const [offer,rests]=await Promise.all([apiFetch('/api/monthlyoffer/current').catch(()=>null),apiFetch('/api/restaurants')]);
+    state.restaurants=rests;state.currentOffer=offer;
+    const card=document.getElementById('current-offer-card');
+    if(offer&&offer.restaurant){
+      card.innerHTML=`<div class="offer-card"><div class="offer-icon">🏆</div><div class="offer-info"><div class="label">Monthly Offer</div><div class="name">${offer.restaurant.name}</div><div class="meta">${offer.restaurant.cuisineType||''}</div></div><div class="offer-actions"><span class="badge badge-offer">ACTIVE</span></div></div>`;
+    } else {
+      card.innerHTML=`<div class="offer-card"><div class="offer-icon">⚠️</div><div class="offer-info"><div class="label">Monthly Offer</div><div class="name" style="color:var(--muted)">No offer set</div></div></div>`;
+    }
+    const el=document.getElementById('offer-table');
+    el.innerHTML=`<table><thead><tr><th>#</th><th>Restaurant</th><th>Cuisine</th><th>Rating</th><th>Action</th></tr></thead><tbody>
+      ${rests.map(r=>{const isActive=offer&&offer.restaurantId===r.id;return`<tr style="${isActive?'background:rgba(183,28,28,.07)':''}"><td><span class="mono">${r.id}</span></td><td><strong>${r.name}</strong>${isActive?' <span class="badge badge-offer" style="margin-left:6px">ACTIVE</span>':''}</td><td>${r.cuisineType||'—'}</td><td><span class="stars">${stars(r.rating)}</span></td><td>${isActive?`<button class="btn btn-danger btn-sm" onclick="removeOffer()">Remove</button>`:`<button class="btn btn-primary btn-sm" onclick="setOffer(${r.id},'${r.name.replace(/'/g,"\\'")}')">Set as Offer</button>`}</td></tr>`;}).join('')}
+    </tbody></table>`;
+  }catch(e){document.getElementById('offer-table').innerHTML=errorState(e.message);}
+}
+async function setOffer(id,name){
+  try{await apiFetch('/api/monthlyoffer/admin/create',{method:'POST',body:JSON.stringify({restaurantId:id,month:new Date().getMonth()+1,year:new Date().getFullYear()})});toast(`"${name}" set as offer!`,'success');loadOffer();}
+  catch(e){toast('Error: '+e.message,'error');}
+}
+async function removeOffer(){
+  try{await apiFetch('/api/monthlyoffer/current',{method:'DELETE'});toast('Offer removed!','success');loadOffer();}
+  catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ══ REVIEWS ═══════════════════════════════════════════
+async function loadReviews(){
+  try{
+    const rests=state.restaurants.length?state.restaurants:await apiFetch('/api/restaurants');
+    state.restaurants=rests;
+    const sel=document.getElementById('review-rest-filter');
+    sel.innerHTML='<option value="">All restaurants</option>'+rests.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+    const allReviews=[];
+    await Promise.all(rests.map(async r=>{try{const rv=await apiFetch(`/api/reviews/restaurant/${r.id}`);rv.forEach(x=>{x._restaurantName=r.name;x._restaurantId=r.id;});allReviews.push(...rv);}catch{}}));
+    state.reviews=allReviews.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    renderReviews(state.reviews);
+  }catch(e){document.getElementById('reviews-list').innerHTML=errorState(e.message);}
+}
+function renderReviews(reviews){
+  const el=document.getElementById('reviews-list');
+  if(!reviews.length){el.innerHTML=emptyState('No reviews');return;}
+  el.innerHTML=reviews.map(r=>`<div class="review-card"><div class="review-header"><div><strong>${r._restaurantName||'—'}</strong><span class="stars" style="margin-left:10px">${stars(r.rating||0)}</span><span class="mono" style="margin-left:6px">${r.rating||0}/5</span></div><div style="display:flex;align-items:center;gap:10px"><div class="review-meta">${r.user?(r.user.firstName||'')+(r.user.lastName?' '+r.user.lastName:''):'User #'+(r.userId||'—')} • ${r.createdAt?new Date(r.createdAt).toLocaleDateString('en-GB'):'—'}</div><button class="btn btn-danger btn-sm" onclick="deleteReview(${r.id},'${(r._restaurantName||'').replace(/'/g,"\\'")}')">✕ Delete</button></div></div><div class="review-text">${r.comment||'<em style="color:var(--muted)">No comment</em>'}</div></div>`).join('');
+}
+function filterReviews(){
+  const restId=parseInt(document.getElementById('review-rest-filter').value)||0;
+  const rating=parseInt(document.getElementById('review-rating-filter').value)||0;
+  renderReviews(state.reviews.filter(r=>(!restId||r._restaurantId===restId)&&(!rating||r.rating===rating)));
+}
+async function deleteReview(id,restName){
+  showConfirm('Delete review?',`The review for "${restName}" will be permanently deleted.`,async()=>{
+    try{await apiFetch(`/api/reviews/${id}`,{method:'DELETE'});toast('Review deleted!','success');loadReviews();}
+    catch(e){toast('Error: '+e.message,'error');}
+  });
+}
+
+// ══ RA TABS ═══════════════════════════════════════════
+function switchRaTab(tabId){
+  document.querySelectorAll('.ra-tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ra-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  const idx=['ra-tab-reservations','ra-tab-details','ra-tab-menu','ra-tab-tables'].indexOf(tabId);
+  document.querySelectorAll('.ra-tab')[idx]?.classList.add('active');
+}
+
+// ══ RA RESERVATIONS ═══════════════════════════════════
+async function loadRaReservations(){
+  const el=document.getElementById('ra-reservations-list');
+  try{
+    const all=await apiFetch('/api/reservations/all').catch(()=>[]);
+    state.raReservations=all.filter(r=>r.restaurantId===state.currentRestAdmin.id);
+    renderRaReservations(state.raReservations);
+  }catch(e){el.innerHTML=errorState(e.message);}
+}
+function renderRaReservations(list){
+  const el=document.getElementById('ra-reservations-list');
+  if(!list.length){el.innerHTML=emptyState('No reservations yet');return;}
+  el.innerHTML=`<table><thead><tr><th>#</th><th>User</th><th>Date</th><th>Time</th><th>Guests</th><th>Table</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    ${list.map(r=>`<tr><td><span class="mono">${r.id}</span></td><td><span class="mono">#${r.userId}</span></td><td>${r.date?new Date(r.date).toLocaleDateString('en-GB'):'—'}</td><td>${r.time||'—'}</td><td>${r.guestCount||'—'}</td><td>${r.tableNumber||'—'}</td><td><span class="badge badge-${(r.status||'').toLowerCase()}">${r.status||'—'}</span></td><td style="display:flex;gap:6px">${r.status==='Pending'?`<button class="btn btn-success" onclick="approveReservation(${r.id})">Approve</button><button class="btn btn-danger" onclick="openRejectModal(${r.id})">Reject</button>`:r.status==='Confirmed'?`<button class="btn btn-danger btn-sm" onclick="cancelRaReservation(${r.id})">Cancel</button>`:'—'}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+function filterRaReservations(){
+  const status=document.getElementById('ra-filter-status').value;
+  renderRaReservations(state.raReservations.filter(r=>!status||r.status===status));
+}
+async function approveReservation(id){
+  try{await apiFetch(`/api/reservations/${id}/approve`,{method:'PUT'});toast('Reservation approved!','success');loadRaReservations();loadRaNotifications();}
+  catch(e){toast('Error: '+e.message,'error');}
+}
+function openRejectModal(id){
+  state.rejectingReservationId=id;
+  document.getElementById('reject-reason').value='';
+  document.getElementById('reject-modal').classList.add('open');
+}
+async function confirmReject(){
+  const reason=document.getElementById('reject-reason').value.trim();
+  if(!reason){toast('Please enter a reason','error');return;}
+  try{
+    await apiFetch(`/api/reservations/${state.rejectingReservationId}/reject`,{method:'PUT',body:JSON.stringify({reason})});
+    toast('Reservation rejected. User notified.','success');
+    closeModal('reject-modal');loadRaReservations();loadRaNotifications();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+async function cancelRaReservation(id){
+  showConfirm('Cancel reservation?',`Reservation #${id} will be cancelled.`,async()=>{
+    try{await apiFetch(`/api/reservations/${id}/cancel`,{method:'PUT'});toast('Cancelled!','success');loadRaReservations();}
+    catch(e){toast('Error: '+e.message,'error');}
+  });
+}
+
+// ══ RA DETAILS ════════════════════════════════════════
+async function saveRaDetails(){
+  const r=state.currentRestAdmin;
+  const body={id:r.id,name:document.getElementById('ra-name').value.trim(),cuisineType:document.getElementById('ra-cuisine').value.trim(),phoneNumber:document.getElementById('ra-phone').value.trim(),address:document.getElementById('ra-address').value.trim(),description:document.getElementById('ra-desc').value.trim(),imageUrl:document.getElementById('ra-img').value.trim(),rating:r.rating};
+  try{await apiFetch(`/api/restaurants/${r.id}`,{method:'PUT',body:JSON.stringify(body)});toast('Details saved!','success');}
+  catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ══ RA MENU ═══════════════════════════════════════════
+async function loadRaMenu(){
+  const el=document.getElementById('ra-menu-list');
+  try{
+    const cats=await apiFetch(`/api/menucategories/restaurant/${state.currentRestAdmin.id}`);
+    if(!cats.length){el.innerHTML=emptyState('No menu categories yet. Click "+ Add Category" to start.');return;}
+    el.innerHTML=cats.map(c=>`
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <strong style="font-family:var(--font-head);font-size:1.1rem;letter-spacing:.5px">${c.name}</strong>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="openAddMenuItemModal(${c.id})">+ Add Item</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id})">Delete</button>
+          </div>
+        </div>
+        ${!(c.menuItems&&c.menuItems.length)?`<div style="color:var(--muted);font-size:.82rem;padding:8px 0">No items yet</div>`:''}
+        ${(c.menuItems||[]).map(item=>`
+          <div class="menu-item-row">
+            <div class="menu-item-info">
+              <div class="item-name">${item.name} ${!item.isAvailable?'<span style="color:var(--muted);font-size:.72rem">(unavailable)</span>':''}</div>
+              <div class="item-price">${item.price} RON</div>
+              ${item.description?`<div class="item-desc">${item.description}</div>`:''}
+            </div>
+            <div class="menu-item-actions">
+              <button class="btn btn-edit btn-sm" onclick="openEditMenuItemModal(${item.id},${c.id},'${item.name.replace(/'/g,"\\'")}',${item.price},'${(item.description||'').replace(/'/g,"\\'")}','${(item.imageUrl||'').replace(/'/g,"\\'")}',${item.isAvailable})">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteMenuItem(${item.id})">✕</button>
+            </div>
+          </div>`).join('')}
+      </div>`).join('');
+  }catch(e){el.innerHTML=errorState(e.message);}
+}
+
+function openAddCategoryModal(){
+  document.getElementById('cat-name').value='';
+  document.getElementById('category-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('cat-name').focus(),100);
+}
+async function saveCategory(){
+  const name=document.getElementById('cat-name').value.trim();
+  if(!name){toast('Category name is required!','error');return;}
+  try{
+    await apiFetch('/api/menucategories',{method:'POST',body:JSON.stringify({name,restaurantId:state.currentRestAdmin.id})});
+    toast('Category added!','success');closeModal('category-modal');loadRaMenu();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+function openAddMenuItemModal(categoryId){
+  state.editingMenuItemId=null;
+  state.addingItemToCategoryId=categoryId;
+  document.getElementById('menuitem-modal-title').textContent='ADD ITEM';
+  document.getElementById('mi-name').value='';
+  document.getElementById('mi-price').value='';
+  document.getElementById('mi-desc').value='';
+  document.getElementById('mi-img').value='';
+  document.getElementById('mi-available').value='true';
+  document.getElementById('menuitem-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('mi-name').focus(),100);
+}
+function openEditMenuItemModal(id,catId,name,price,desc,img,isAvailable){
+  state.editingMenuItemId=id;
+  state.addingItemToCategoryId=catId;
+  document.getElementById('menuitem-modal-title').textContent='EDIT ITEM';
+  document.getElementById('mi-name').value=name;
+  document.getElementById('mi-price').value=price;
+  document.getElementById('mi-desc').value=desc;
+  document.getElementById('mi-img').value=img;
+  document.getElementById('mi-available').value=isAvailable?'true':'false';
+  document.getElementById('menuitem-modal').classList.add('open');
+}
+async function saveMenuItem(){
+  const name=document.getElementById('mi-name').value.trim();
+  const price=parseFloat(document.getElementById('mi-price').value);
+  if(!name){toast('Name is required!','error');return;}
+  if(isNaN(price)||price<0){toast('Valid price is required!','error');return;}
+  const body={
+    categoryId:state.addingItemToCategoryId,
+    name,price,
+    description:document.getElementById('mi-desc').value.trim(),
+    imageUrl:document.getElementById('mi-img').value.trim(),
+    isAvailable:document.getElementById('mi-available').value==='true'
+  };
+  try{
+    if(state.editingMenuItemId){
+      await apiFetch(`/api/menuitems/${state.editingMenuItemId}`,{method:'PUT',body:JSON.stringify(body)});
+      toast('Item updated!','success');
+    } else {
+      await apiFetch('/api/menuitems',{method:'POST',body:JSON.stringify(body)});
+      toast('Item added!','success');
+    }
+    closeModal('menuitem-modal');loadRaMenu();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+function deleteCategory(id){
+  showConfirm('Delete category?','All items in this category will also be deleted.',()=>{
+    apiFetch(`/api/menucategories/${id}`,{method:'DELETE'})
+      .then(()=>{toast('Category deleted!','success');loadRaMenu();})
+      .catch(e=>toast('Error: '+e.message,'error'));
+  });
+}
+function deleteMenuItem(id){
+  showConfirm('Delete item?','This menu item will be removed.',()=>{
+    apiFetch(`/api/menuitems/${id}`,{method:'DELETE'})
+      .then(()=>{toast('Item deleted!','success');loadRaMenu();})
+      .catch(e=>toast('Error: '+e.message,'error'));
+  });
+}
+
+// ══ RA TABLES — DRAG & DROP ═══════════════════════════
+
+// ── Decor DB helpers ───────────────────────────────
+state.decors = [];
+
+async function loadDecors(){
+  try{
+    const decors = await apiFetch(`/api/floordecor/restaurant/${state.currentRestAdmin.id}`);
+    state.decors = decors;
+    return decors;
+  }catch{ return []; }
+}
+
+// ── Load & render ───────────────────────────────────
+async function loadRaTables(){
+  try{
+    const [tables, decors] = await Promise.all([
+      apiFetch(`/api/tables/restaurant/${state.currentRestAdmin.id}`),
+      apiFetch(`/api/floordecor/restaurant/${state.currentRestAdmin.id}`).catch(()=>[])
+    ]);
+    state.tables = tables;
+    state.decors = decors;
+    renderFloorCanvas(tables, decors);
+  }catch(e){document.getElementById('floor-canvas').innerHTML=errorState(e.message);}
+}
+
+function renderFloorCanvas(tables, decors=[]){
+  const canvas=document.getElementById('floor-canvas');
+  canvas.innerHTML='<div class="grid-bg"></div>';
+  const W=canvas.offsetWidth||900;
+  const H=560;
+
+  if(!tables.length && !decors.length){
+    canvas.innerHTML+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem">No tables yet. Click "+ Add Table" to add one.</div>';
+  }
+
+  // Render decor blocks first (behind tables)
+  decors.forEach(d=>renderDecorNode(d, canvas, W, H));
+
+  // Render tables
+  tables.forEach(t=>{
+    let x=t.positionX||0, y=t.positionY||0;
+    if(!t.positionX&&!t.positionY){
+      const idx=tables.indexOf(t);
+      x=60+(idx%8)*90; y=60+Math.floor(idx/8)*100;
+    }
+    x=Math.min(Math.max(x,32),W-32);
+    y=Math.min(Math.max(y,32),H-32);
+
+    const node=document.createElement('div');
+    node.className='table-node';
+    node.dataset.tableId=t.id;
+    node.style.left=(x-32)+'px';
+    node.style.top=(y-32)+'px';
+    node.innerHTML=`<div class="tn">${t.tableNumber}</div><div class="ts">${t.seats} seats</div>`;
+
+    makeDraggable(node, W, H, (left,top)=>{
+      const tbl=state.tables.find(x=>x.id===t.id);
+      if(tbl){tbl.positionX=left+32;tbl.positionY=top+32;}
+    });
+
+    node.addEventListener('contextmenu',e=>{
+      e.preventDefault();
+      showConfirm(`Delete Table #${t.tableNumber}?`,'This table will be permanently removed.',()=>{
+        apiFetch(`/api/tables/${t.id}`,{method:'DELETE'})
+          .then(()=>{toast('Table deleted!','success');loadRaTables();})
+          .catch(err=>toast('Error: '+err.message,'error'));
+      });
+    });
+
+    canvas.appendChild(node);
+  });
+}
+
+// ── Generic drag helper ─────────────────────────────
+function makeDraggable(node, W, H, onMove){
+  let isDragging=false,startX,startY,startLeft,startTop;
+  node.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    isDragging=true;
+    startX=e.clientX;startY=e.clientY;
+    startLeft=parseInt(node.style.left)||0;
+    startTop=parseInt(node.style.top)||0;
+    node.classList.add('dragging');
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  const onMouseMove=e=>{
+    if(!isDragging)return;
+    const nodeW=node.offsetWidth, nodeH=node.offsetHeight;
+    const newLeft=Math.min(Math.max(startLeft+(e.clientX-startX),0),W-nodeW);
+    const newTop=Math.min(Math.max(startTop+(e.clientY-startY),0),H-nodeH);
+    node.style.left=newLeft+'px';
+    node.style.top=newTop+'px';
+  };
+  const onMouseUp=()=>{
+    if(!isDragging)return;
+    isDragging=false;
+    node.classList.remove('dragging');
+    if(onMove) onMove(parseInt(node.style.left),parseInt(node.style.top));
+  };
+  document.addEventListener('mousemove',onMouseMove);
+  document.addEventListener('mouseup',onMouseUp);
+}
+
+// ── Decor drag from palette (HTML5 drag) ───────────
+let _pendingDecor=null;
+function startDecorDrag(e,type,icon,label,w,h){
+  _pendingDecor={type,icon,label,w,h};
+  e.dataTransfer.effectAllowed='copy';
+  e.dataTransfer.setData('text/plain','decor');
+}
+
+async function dropDecorOnCanvas(e){
+  e.preventDefault();
+  if(!_pendingDecor)return;
+  const canvas=document.getElementById('floor-canvas');
+  const rect=canvas.getBoundingClientRect();
+  const x=Math.max(0, e.clientX-rect.left-_pendingDecor.w/2);
+  const y=Math.max(0, e.clientY-rect.top-_pendingDecor.h/2);
+
+  try{
+    const newDecor = await apiFetch('/api/floordecor', {
+      method:'POST',
+      body: JSON.stringify({
+        restaurantId: state.currentRestAdmin.id,
+        type: _pendingDecor.type,
+        icon: _pendingDecor.icon,
+        label: _pendingDecor.label,
+        width: _pendingDecor.w,
+        height: _pendingDecor.h,
+        x, y
+      })
+    });
+    state.decors.push(newDecor);
+    renderDecorNode(newDecor, canvas, canvas.offsetWidth||900, 560);
+    toast(`${_pendingDecor.label} added!`,'success');
+  }catch(err){
+    toast('Error adding decor: '+err.message,'error');
+  }
+  _pendingDecor=null;
+}
+
+function renderDecorNode(d, canvas, W, H){
+  const w = d.width || d.w || 80;
+  const h = d.height || d.h || 40;
+  const node=document.createElement('div');
+  node.className='decor-node';
+  node.dataset.decorId=d.id;
+  node.style.width=w+'px';
+  node.style.height=h+'px';
+  node.style.left=Math.min(d.x, W-w)+'px';
+  node.style.top=Math.min(d.y, H-h)+'px';
+  node.innerHTML=`<div class="di">${d.icon}</div><div class="dl">${d.label}</div>`;
+
+  makeDraggable(node, W, H, async (left,top)=>{
+    try{
+      await apiFetch(`/api/floordecor/${d.id}`,{
+        method:'PUT',
+        body: JSON.stringify({id:d.id,restaurantId:state.currentRestAdmin.id,type:d.type,icon:d.icon,label:d.label,width:w,height:h,x:left,y:top})
+      });
+      const item=state.decors.find(x=>x.id===d.id);
+      if(item){item.x=left;item.y=top;}
+    }catch(err){ toast('Error saving position','error'); }
+  });
+
+  node.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    showConfirm(`Remove ${d.label}?`,'This decorative element will be removed.',()=>{
+      apiFetch(`/api/floordecor/${d.id}`,{method:'DELETE'})
+        .then(()=>{
+          state.decors=state.decors.filter(x=>x.id!==d.id);
+          node.remove();
+          toast(`${d.label} removed!`,'success');
+        })
+        .catch(err=>toast('Error: '+err.message,'error'));
+    });
+  });
+
+  canvas.appendChild(node);
+}
+
+async function clearAllDecor(){
+  showConfirm('Clear all decor?','All decorative elements will be removed from the canvas.',async ()=>{
+    try{
+      await apiFetch(`/api/floordecor/restaurant/${state.currentRestAdmin.id}/all`,{method:'DELETE'});
+      state.decors=[];
+      loadRaTables();
+      toast('Decor cleared!','success');
+    }catch(e){toast('Error: '+e.message,'error');}
+  });
+}
+
+// ── Save table positions ────────────────────────────
+async function saveTablePositions(){
+  try{
+    await Promise.all(state.tables.map(t=>
+      apiFetch(`/api/tables/${t.id}`,{method:'PUT',body:JSON.stringify({id:t.id,tableNumber:t.tableNumber,seats:t.seats,floor:t.floor,restaurantId:state.currentRestAdmin.id,positionX:t.positionX||0,positionY:t.positionY||0})})
+    ));
+    toast('Table positions saved!','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+function openAddTableModal(){
+  state.editingTableId=null;
+  document.getElementById('table-modal-title').textContent='ADD TABLE';
+  document.getElementById('t-number').value='';
+  document.getElementById('t-seats').value='';
+  document.getElementById('t-floor').value='1';
+  document.getElementById('table-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('t-number').focus(),100);
+}
+async function saveTable(){
+  const num=parseInt(document.getElementById('t-number').value);
+  const seats=parseInt(document.getElementById('t-seats').value);
+  const floor=parseInt(document.getElementById('t-floor').value)||1;
+  if(!num||num<1){toast('Table number is required!','error');return;}
+  if(!seats||seats<1){toast('Number of seats is required!','error');return;}
+  try{
+    await apiFetch('/api/tables',{method:'POST',body:JSON.stringify({tableNumber:num,seats,floor,restaurantId:state.currentRestAdmin.id,positionX:0,positionY:0})});
+    toast('Table added!','success');closeModal('table-modal');loadRaTables();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ══ CLOSE OVERLAYS ════════════════════════════════════
+['rest-modal','reject-modal','category-modal','menuitem-modal','table-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
+});
+document.getElementById('confirm-overlay').addEventListener('click',function(e){if(e.target===this)closeConfirm();});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.bell-wrap')){
+    document.getElementById('notif-dropdown')?.classList.remove('open');
+    document.getElementById('ra-notif-dropdown')?.classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>

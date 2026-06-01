@@ -22,6 +22,7 @@ namespace DineoAPP.Data
         public DbSet<UserMonthlyOffer> UserMonthlyOffers { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<DiscoveredRestaurant> DiscoveredRestaurants { get; set; }
+        public DbSet<FloorDecor> FloorDecors { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

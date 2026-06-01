@@ -38,6 +38,7 @@ namespace DineoAPP.Controllers
                 offer.Month,
                 offer.Year,
                 offer.IsActive,
+                RestaurantId = offer.RestaurantId,
                 Restaurant = new
                 {
                     offer.Restaurant.Id,
@@ -122,28 +123,50 @@ namespace DineoAPP.Controllers
             return Ok(new { message = "Offer used successfully!" });
         }
 
-        // POST: api/monthlyoffer/admin/create
+        // POST: api/monthlyoffer/admin/create  ← înlocuiește oferta existentă
         [HttpPost("admin/create")]
         public async Task<IActionResult> CreateOffer([FromBody] CreateOfferRequest request)
         {
+            // Dacă există deja o ofertă pentru luna respectivă, o dezactivăm
             var existing = await _context.MonthlyOffers
-                .AnyAsync(o => o.Month == request.Month && o.Year == request.Year);
+                .Where(o => o.Month == request.Month && o.Year == request.Year)
+                .ToListAsync();
 
-            if (existing)
-                return BadRequest(new { message = "Offer already exists for this month" });
+            foreach (var old in existing)
+            {
+                old.IsActive = false;
+            }
 
+            // Creăm oferta nouă
             var offer = new MonthlyOffer
             {
                 RestaurantId = request.RestaurantId,
-                Month = request.Month,
-                Year = request.Year,
-                IsActive = true
+                Month        = request.Month,
+                Year         = request.Year,
+                IsActive     = true
             };
 
             _context.MonthlyOffers.Add(offer);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Offer created!", offerId = offer.Id });
+            return Ok(new { message = "Offer updated!", offerId = offer.Id });
+        }
+
+        // DELETE: api/monthlyoffer/current
+        [HttpDelete("current")]
+        public async Task<IActionResult> RemoveCurrentOffer()
+        {
+            var now = DateTime.UtcNow;
+
+            var offers = await _context.MonthlyOffers
+                .Where(o => o.Month == now.Month && o.Year == now.Year && o.IsActive)
+                .ToListAsync();
+
+            foreach (var offer in offers)
+                offer.IsActive = false;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Offer removed!" });
         }
     }
 
@@ -158,4 +181,4 @@ namespace DineoAPP.Controllers
         public int Month { get; set; }
         public int Year { get; set; }
     }
-} 
+}

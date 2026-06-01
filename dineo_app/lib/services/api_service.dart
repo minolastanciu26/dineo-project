@@ -147,6 +147,21 @@ class ApiService {
     return [];
   }
 
+  Future<List<dynamic>> getFloorDecors(int restaurantId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/floordecor/restaurant/$restaurantId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    return [];
+  } catch (e) {
+    return [];
+  }
+}
+
   Future<bool> createReservation({
     required int userId,
     required int restaurantId,
@@ -184,7 +199,7 @@ class ApiService {
   Future<String> getRecommendation(String preference) async {
   print('DEBUG: Calling recommend API at $baseUrl/api/recommend');
   try {
-    final response = await http.post(
+    final response = await http.post( 
       Uri.parse('$baseUrl/api/recommend'),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"preference": preference}),

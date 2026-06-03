@@ -264,6 +264,33 @@ select.form-control option{background:var(--surface2);}
 @keyframes spin{to{transform:rotate(360deg);}}
 @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+/* ══ ORDERS TAB ══════════════════════════════════════════════════════════ */
+.orders-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.orders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;}
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;transition:border-color .2s;}
+.order-card.new-order{border-color:var(--red-light);animation:pulse-order 2s infinite;}
+@keyframes pulse-order{0%,100%{border-color:var(--red-light);}50%{border-color:#ff5252;box-shadow:0 0 14px var(--red-glow);}}
+.order-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.order-table-label{font-family:var(--font-head);font-size:1.6rem;letter-spacing:1px;}
+.order-time{color:var(--muted);font-size:.72rem;margin-top:2px;}
+.order-items-list{border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;}
+.order-item-row{display:flex;justify-content:space-between;font-size:.82rem;color:#ccc;margin-bottom:5px;}
+.order-total{font-size:.9rem;font-weight:700;color:var(--red-light);text-align:right;border-top:1px solid var(--border);padding-top:8px;margin-bottom:14px;}
+.order-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-order{flex:1;min-width:80px;padding:8px 0;border-radius:var(--radius);border:none;font-family:var(--font-body);font-size:.75rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.btn-order:hover{opacity:.84;}
+.btn-order:disabled{opacity:.35;cursor:default;}
+.btn-order-accept{background:var(--red-light);color:#fff;}
+.btn-order-ready{background:#4CAF50;color:#fff;}
+.btn-order-paid{background:var(--red);color:#fff;}
+.btn-order-done{background:var(--surface2);color:var(--muted);}
+.order-new-badge{position:absolute;top:10px;right:10px;background:var(--red-light);color:#fff;font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase;animation:slideUp .3s ease;}
+.orders-empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);}
+.orders-empty-state .icon{font-size:2.5rem;margin-bottom:12px;}
+.ra-orders-badge{background:var(--red-light);color:#fff;border-radius:99px;padding:1px 7px;font-size:.7rem;margin-left:6px;display:none;}
+.ra-orders-badge.show{display:inline;}
+
 </style>
 </head>
 <body>
@@ -546,6 +573,10 @@ select.form-control option{background:var(--surface2);}
         Reservations
         <span id="ra-pending-count" style="background:var(--red);color:#fff;border-radius:99px;padding:1px 7px;font-size:.7rem;margin-left:6px;display:none">0</span>
       </div>
+      <div class="ra-tab" onclick="switchRaTab('ra-tab-orders')">
+        Orders
+        <span class="ra-orders-badge" id="ra-orders-badge">●</span>
+      </div>
       <div class="ra-tab" onclick="switchRaTab('ra-tab-details')">Details</div>
       <div class="ra-tab" onclick="switchRaTab('ra-tab-menu')">Menu</div>
       <div class="ra-tab" onclick="switchRaTab('ra-tab-tables')">Tables</div>
@@ -565,6 +596,23 @@ select.form-control option{background:var(--surface2);}
           </select>
         </div>
         <div id="ra-reservations-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div class="ra-tab-content" id="ra-tab-orders">
+      <div class="orders-header">
+        <div>
+          <h3 style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:1px">ACTIVE ORDERS</h3>
+          <div id="ra-orders-count" style="color:var(--muted);font-size:.78rem;margin-top:2px">Loading...</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadRaOrders()">↻ Refresh</button>
+      </div>
+      <div class="orders-grid" id="ra-orders-grid">
+        <div class="orders-empty-state">
+          <div class="icon">🍽️</div>
+          <p>Loading orders...</p>
+        </div>
       </div>
     </div>
 
@@ -732,7 +780,12 @@ select.form-control option{background:var(--surface2);}
 <div id="toast-container"></div>
 
 <script>
-const API = 'http://localhost:5177';
+// Auto-detect: try http first, fallback port from .NET launchSettings
+const API = (() => {
+  // Check your Properties/launchSettings.json for the correct port
+  // Common: http://localhost:5177 or https://localhost:7042
+  return 'http://localhost:5177';
+})();
 const SUPER_PASSWORD = 'dineo2026';
 
 let state = {
@@ -784,6 +837,7 @@ function doSuperLogin(){
     document.getElementById('superadmin-login').classList.remove('show');
     document.getElementById('superadmin-app').classList.add('show');
     document.getElementById('sa-error').classList.remove('show');
+    sessionStorage.setItem('sa_session', '1');
     checkApi(); loadDashboard(); startNotifPolling();
   } else {
     document.getElementById('sa-error').classList.add('show');
@@ -806,6 +860,12 @@ async function doRestLogin(){
       document.getElementById('restadmin-app').classList.add('show');
       const restaurant=await apiFetch(`/api/restaurants/${restId}`);
       state.currentRestAdmin=restaurant;
+      // Persist session so refresh doesn't log out
+      sessionStorage.setItem('ra_session', JSON.stringify({
+        restaurantId: restaurant.id,
+        restaurantName: restaurant.name,
+        restaurant: restaurant
+      }));
       document.getElementById('ra-rest-name').textContent=restaurant.name.toUpperCase();
       document.getElementById('ra-name').value=restaurant.name||'';
       document.getElementById('ra-cuisine').value=restaurant.cuisineType||'';
@@ -813,7 +873,7 @@ async function doRestLogin(){
       document.getElementById('ra-address').value=restaurant.address||'';
       document.getElementById('ra-desc').value=restaurant.description||'';
       document.getElementById('ra-img').value=restaurant.imageUrl||'';
-      loadRaReservations(); loadRaMenu(); loadRaTables(); startRaNotifPolling();
+      loadRaReservations(); loadRaMenu(); loadRaTables(); startRaNotifPolling(); startRaOrdersPolling();
     } else {
       err.textContent='Incorrect password.';err.classList.add('show');
       document.getElementById('ra-password').value='';
@@ -833,6 +893,8 @@ function doLogout(){
   document.getElementById('ra-password').value='';
   document.getElementById('ra-restaurant-select').value='';
   state.currentRestAdmin=null;
+  sessionStorage.removeItem('ra_session');
+  sessionStorage.removeItem('sa_session');
   if(state.raNotifInterval) clearInterval(state.raNotifInterval);
 }
 
@@ -1108,9 +1170,16 @@ async function deleteReview(id,restName){
 function switchRaTab(tabId){
   document.querySelectorAll('.ra-tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.ra-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
-  const idx=['ra-tab-reservations','ra-tab-details','ra-tab-menu','ra-tab-tables'].indexOf(tabId);
+  const tabEl = document.getElementById(tabId);
+  if(tabEl) tabEl.classList.add('active');
+  const idx=['ra-tab-reservations','ra-tab-orders','ra-tab-details','ra-tab-menu','ra-tab-tables'].indexOf(tabId);
   document.querySelectorAll('.ra-tab')[idx]?.classList.add('active');
+  if(tabId==='ra-tab-orders'){
+    // Small delay to ensure DOM is visible before rendering
+    setTimeout(loadRaOrders, 50);
+  }
+  if(tabId==='ra-tab-reservations') loadRaReservations();
+  if(tabId==='ra-tab-menu') loadRaMenu();
 }
 
 // ══ RA RESERVATIONS ═══════════════════════════════════
@@ -1508,6 +1577,192 @@ document.addEventListener('click',e=>{
     document.getElementById('ra-notif-dropdown')?.classList.remove('open');
   }
 });
+
+// ══ RA ORDERS ════════════════════════════════════════════════════════════════
+
+let _ordersInterval = null;
+let _knownOrderIds  = new Set();
+
+function startRaOrdersPolling(){
+  if(_ordersInterval) clearInterval(_ordersInterval);
+  setTimeout(()=>{
+    loadRaOrders();
+    _ordersInterval = setInterval(loadRaOrders, 15000);
+  }, 500);
+}
+
+async function loadRaOrders(){
+  if(!state.currentRestAdmin){ return; }
+  const url = API + `/api/orders/restaurant/${state.currentRestAdmin.id}/active`;
+  try{
+    const res = await fetch(url, {headers:{'Content-Type':'application/json'}});
+    // 404 = no orders yet → treat as empty array
+    if(res.status === 404){ renderRaOrders([]); return; }
+    if(!res.ok){ 
+      const txt = await res.text();
+      throw new Error(`HTTP ${res.status}: ${txt}`);
+    }
+    const orders = await res.json();
+    renderRaOrders(Array.isArray(orders) ? orders : []);
+  }catch(e){
+    console.error('[Orders] Error:', e.message);
+    const grid = document.getElementById('ra-orders-grid');
+    if(grid) grid.innerHTML = `<div class="orders-empty-state"><div class="icon">⚠️</div><p style="font-weight:700;color:#f44336;margin-bottom:6px">Could not load orders</p><p style="font-size:.8rem;color:var(--muted)">${e.message}</p></div>`;
+  }
+}
+
+function renderRaOrders(orders){
+  const grid    = document.getElementById('ra-orders-grid');
+  const countEl = document.getElementById('ra-orders-count');
+  const badge   = document.getElementById('ra-orders-badge');
+  if(!grid) return;
+
+  if(!orders || !orders.length){
+    grid.innerHTML = `<div class="orders-empty-state"><div class="icon">🍽️</div><p style="font-weight:700;margin-bottom:6px">No active orders</p><p style="font-size:.8rem">Orders will appear here as customers place them.</p></div>`;
+    if(countEl) countEl.textContent = '0 active orders';
+    if(badge)   badge.classList.remove('show');
+    return;
+  }
+
+  if(countEl) countEl.textContent = `${orders.length} active order${orders.length!==1?'s':''}`;
+
+  const hasNew = orders.some(o => !_knownOrderIds.has(o.id));
+  if(badge) badge.classList.toggle('show', hasNew);
+
+  grid.innerHTML = orders.map(order => {
+    const isNew = !_knownOrderIds.has(order.id);
+    _knownOrderIds.add(order.id);
+
+    const statusBadgeClass = {
+      Pending:'badge-pending', InProgress:'badge-confirmed',
+      Ready:'badge-confirmed', BillRequested:'badge-cancelled', Paid:'badge-confirmed'
+    }[order.status] || 'badge-pending';
+
+    const statusLabel = {
+      Pending:'Pending', InProgress:'In Progress',
+      Ready:'Ready', BillRequested:'Bill Requested', Paid:'Paid'
+    }[order.status] || order.status;
+
+    const itemsHtml = (order.items||[]).map(item =>
+      `<div class="order-item-row">
+        <span>${item.quantity}× ${item.menuItemName}</span>
+        <span style="color:var(--muted)">${((item.subtotal)||(item.price*item.quantity)).toFixed(0)} RON</span>
+      </div>`
+    ).join('');
+
+    const timeStr = new Date(order.createdAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const actionsHtml = buildRaOrderActions(order);
+
+    return `<div class="order-card${isNew?' new-order':''}" id="raoc-${order.id}">
+      ${isNew?'<span class="order-new-badge">New</span>':''}
+      <div class="order-card-header">
+        <div>
+          <div class="order-table-label">Table ${order.tableNumber??'?'}</div>
+          <div class="order-time">Order #${order.id} · ${timeStr}</div>
+        </div>
+        <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+      </div>
+      <div class="order-items-list">${itemsHtml||'<span style="color:var(--muted);font-size:.8rem">No items</span>'}</div>
+      <div class="order-total">Total: ${parseFloat(order.totalPrice).toFixed(2)} RON</div>
+      <div class="order-actions">${actionsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildRaOrderActions(order){
+  switch(order.status){
+    case 'Pending':
+      return `<button class="btn-order btn-order-accept" onclick="setRaOrderStatus(${order.id},'InProgress')">✔ Accept</button>`;
+    case 'InProgress':
+      return `<button class="btn-order btn-order-ready" onclick="setRaOrderStatus(${order.id},'Ready')">🍽️ Mark Ready</button>`;
+    case 'Ready':
+      return `<button class="btn-order btn-order-done" disabled>Waiting for customer</button>`;
+    case 'BillRequested':
+      return `<button class="btn-order btn-order-paid" onclick="setRaOrderStatus(${order.id},'Paid')">💳 Mark Paid</button>`;
+    case 'Paid':
+      return `<button class="btn-order btn-order-done" disabled>✓ Paid</button>`;
+    default:
+      return '';
+  }
+}
+
+async function setRaOrderStatus(orderId, newStatus){
+  try{
+    const res = await fetch(API+`/api/orders/${orderId}/status`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({status:newStatus})
+    });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast(`Order #${orderId} → ${newStatus}`,'success');
+    loadRaOrders();
+  }catch(e){ toast('Error: '+e.message,'error'); }
+}
+
+
+// ══ SESSION RESTORE (survives F5 / browser refresh) ═══════════════
+(function restoreSession(){
+  const saSession = sessionStorage.getItem('sa_session');
+  if(saSession){
+    document.getElementById('landing').classList.add('hidden');
+    document.getElementById('superadmin-app').classList.add('show');
+    checkApi(); loadDashboard(); startNotifPolling();
+    return;
+  }
+  const raRaw = sessionStorage.getItem('ra_session');
+  if(raRaw){
+    try{
+      const sess = JSON.parse(raRaw);
+      state.currentRestAdmin = sess.restaurant;
+      document.getElementById('landing').classList.add('hidden');
+      document.getElementById('restadmin-app').classList.add('show');
+      const nameEl = document.getElementById('ra-rest-name');
+      if(nameEl) nameEl.textContent = sess.restaurantName.toUpperCase();
+      // Restore form fields
+      const r = sess.restaurant;
+      if(r){
+        ['ra-name','ra-cuisine','ra-phone','ra-address','ra-desc','ra-img'].forEach(id => {
+          const el = document.getElementById(id);
+          if(!el) return;
+          const key = {
+            'ra-name':'name','ra-cuisine':'cuisineType','ra-phone':'phoneNumber',
+            'ra-address':'address','ra-desc':'description','ra-img':'imageUrl'
+          }[id];
+          if(key && r[key]) el.value = r[key];
+        });
+      }
+      loadRaReservations(); loadRaMenu(); loadRaTables(); startRaNotifPolling(); startRaOrdersPolling();
+    }catch(e){ sessionStorage.removeItem('ra_session'); }
+  }
+})();
+
+// ══ TAB NAVIGATION with URL hash (back/forward buttons) ═══════════
+function switchRaTabWithHash(tabId){
+  switchRaTab(tabId);
+  // Update URL hash so browser back/forward works
+  history.pushState({tab: tabId}, '', '#' + tabId);
+}
+
+// Intercept all ra-tab clicks to use hash navigation
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.ra-tab').forEach(btn => {
+    const onclick = btn.getAttribute('onclick');
+    if(onclick && onclick.includes('switchRaTab(')) {
+      const match = onclick.match(/switchRaTab\('([^']+)'\)/);
+      if(match){
+        btn.setAttribute('onclick', `switchRaTabWithHash('${match[1]}')`);
+      }
+    }
+  });
+});
+
+// Handle browser back/forward
+window.addEventListener('popstate', (e) => {
+  if(e.state && e.state.tab){
+    switchRaTab(e.state.tab);
+  }
+});
+
 </script>
 </body>
 </html>

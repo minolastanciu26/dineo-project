@@ -13,6 +13,35 @@ class ApiService {
     }
   }
 
+  // ── AUTH ──────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/login'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email, "password": password}),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return null;
+  }
+
+  Future<bool> register(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/register'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(data),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── RESTAURANTS ───────────────────────────────────────
+
   Future<List<Restaurant>> getRestaurants({String? search}) async {
     final uri = search != null && search.isNotEmpty
         ? Uri.parse('$baseUrl/api/restaurants?search=$search')
@@ -27,41 +56,49 @@ class ApiService {
   }
 
   Future<List<Restaurant>> getTopRated() async {
-    final response = await http.get(Uri.parse('$baseUrl/api/restaurants/top-rated'));
+    final response =
+        await http.get(Uri.parse('$baseUrl/api/restaurants/top-rated'));
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => Restaurant.fromJson(item)).toList();
     } else {
-      throw Exception("Error loading restaurants");
+      throw Exception("Error loading top rated restaurants");
     }
   }
 
   Future<List<Restaurant>> getNewRestaurants() async {
-    final response = await http.get(Uri.parse('$baseUrl/api/restaurants/new'));
+    final response =
+        await http.get(Uri.parse('$baseUrl/api/restaurants/new'));
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => Restaurant.fromJson(item)).toList();
     } else {
-      throw Exception("Error loading restaurants");
+      throw Exception("Error loading new restaurants");
     }
   }
 
-  Future<Restaurant> getRestaurantById(int id) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/restaurants/$id'));
-    if (response.statusCode == 200) {
-      return Restaurant.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception("Restaurant not found");
-    }
+  Future<Restaurant?> getRestaurantById(int id) async {
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/api/restaurants/$id'));
+      if (response.statusCode == 200) {
+        return Restaurant.fromJson(jsonDecode(response.body));
+      }
+    } catch (_) {}
+    return null;
   }
+
+  // ── FAVOURITES ────────────────────────────────────────
 
   Future<bool> checkFavourite(int userId, int restaurantId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/favourites/$userId/check/$restaurantId'),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body)['isFavourite'];
-    }
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/favourites/$userId/check/$restaurantId'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['isFavourite'] ?? false;
+      }
+    } catch (_) {}
     return false;
   }
 
@@ -74,28 +111,36 @@ class ApiService {
   }
 
   Future<void> removeFavourite(int userId, int restaurantId) async {
-    final request = http.Request('DELETE', Uri.parse('$baseUrl/api/favourites'));
+    final request =
+        http.Request('DELETE', Uri.parse('$baseUrl/api/favourites'));
     request.headers['Content-Type'] = 'application/json';
-    request.body = jsonEncode({"userId": userId, "restaurantId": restaurantId});
+    request.body =
+        jsonEncode({"userId": userId, "restaurantId": restaurantId});
     await request.send();
   }
 
   Future<List<Restaurant>> getFavouriteRestaurants(int userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/favourites/$userId'));
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => Restaurant.fromJson(item)).toList();
-    }
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/api/favourites/$userId'));
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((item) => Restaurant.fromJson(item)).toList();
+      }
+    } catch (_) {}
     return [];
   }
 
   Future<bool> checkFavouriteItem(int userId, int menuItemId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/favouriteitems/$userId/check/$menuItemId'),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body)['isFavourite'];
-    }
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/api/favouriteitems/$userId/check/$menuItemId'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['isFavourite'] ?? false;
+      }
+    } catch (_) {}
     return false;
   }
 
@@ -108,59 +153,68 @@ class ApiService {
   }
 
   Future<void> removeFavouriteItem(int userId, int menuItemId) async {
-    final request = http.Request('DELETE', Uri.parse('$baseUrl/api/favouriteitems'));
+    final request =
+        http.Request('DELETE', Uri.parse('$baseUrl/api/favouriteitems'));
     request.headers['Content-Type'] = 'application/json';
-    request.body = jsonEncode({"userId": userId, "menuItemId": menuItemId});
+    request.body =
+        jsonEncode({"userId": userId, "menuItemId": menuItemId});
     await request.send();
   }
 
   Future<List<MenuItem>> getFavouriteItems(int userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/favouriteitems/$userId'));
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => MenuItem.fromJson(item)).toList();
-    }
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/favouriteitems/$userId'));
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((item) => MenuItem.fromJson(item)).toList();
+      }
+    } catch (_) {}
     return [];
   }
 
-  Future<List<MenuItem>> getFavouriteItemsByRestaurant(int userId, int restaurantId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/favouriteitems/$userId/restaurant/$restaurantId'),
-    );
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => MenuItem.fromJson(item)).toList();
-    }
+  Future<List<MenuItem>> getFavouriteItemsByRestaurant(
+      int userId, int restaurantId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/api/favouriteitems/$userId/restaurant/$restaurantId'),
+      );
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((item) => MenuItem.fromJson(item)).toList();
+      }
+    } catch (_) {}
     return [];
   }
 
-  // ── RESERVATIONS ─────────────────────────────────────
-  Future<List<dynamic>> getAvailableTables(int restaurantId, DateTime date, String time) async {
-    final formattedDate = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    final uri = Uri.parse(
-      '$baseUrl/api/reservations/available/$restaurantId?date=$formattedDate&time=$time:00',
-    );
-    final response = await http.get(uri);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
+  // ── RESERVATIONS ──────────────────────────────────────
+
+  Future<List<dynamic>> getAvailableTables(
+      int restaurantId, DateTime date, String time) async {
+    try {
+      final formattedDate =
+          "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+      final uri = Uri.parse(
+        '$baseUrl/api/reservations/available/$restaurantId?date=$formattedDate&time=$time:00',
+      );
+      final response = await http.get(uri);
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
     return [];
   }
 
   Future<List<dynamic>> getFloorDecors(int restaurantId) async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/floordecor/restaurant/$restaurantId'),
-      headers: {'Content-Type': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    }
-    return [];
-  } catch (e) {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/api/floordecor/restaurant/$restaurantId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
     return [];
   }
-}
 
   Future<bool> createReservation({
     required int userId,
@@ -170,207 +224,364 @@ class ApiService {
     required String time,
     required int guestCount,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/reservations'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "userId": userId,
-        "restaurantId": restaurantId,
-        "tableId": tableId,
-        "date": date.toIso8601String(),
-        "time": time,
-        "guestCount": guestCount,
-      }),
-    );
-    return response.statusCode == 200;
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/reservations'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "userId": userId,
+          "restaurantId": restaurantId,
+          "tableId": tableId,
+          "date": date.toIso8601String(),
+          "time": time,
+          "guestCount": guestCount,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<List<dynamic>> getUserReservations(int userId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/reservations/user/$userId'),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/reservations/user/$userId'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
     return [];
   }
 
-  // ── AI RECOMMEND ─────────────────────────────────────
+  // ── AI RECOMMEND ──────────────────────────────────────
+
   Future<String> getRecommendation(String preference) async {
-  print('DEBUG: Calling recommend API at $baseUrl/api/recommend');
-  try {
-    final response = await http.post( 
-      Uri.parse('$baseUrl/api/recommend'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"preference": preference}),
-    );
-    print('DEBUG: Response status: ${response.statusCode}');
-    print('DEBUG: Response body: ${response.body}');
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['recommendation'] ?? 'No recommendation found.';
-    } else {
-      throw Exception("Error: ${response.statusCode}");
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/recommend'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"preference": preference}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['recommendation'] ?? 'No recommendation found.';
+      } else {
+        throw Exception("Error: ${response.statusCode}");
+      }
+    } catch (e) {
+      throw Exception("Error getting recommendation");
     }
-  } catch (e) {
-    print('DEBUG: Exception: $e');
-    throw Exception("Error getting recommendation");
   }
-}
 
-// ── REVIEWS ──────────────────────────────────────────
-Future<List<dynamic>> getReviews(int restaurantId) async {
-  final response = await http.get(
-    Uri.parse('$baseUrl/api/reviews/restaurant/$restaurantId'),
-  );
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+  // ── REVIEWS ───────────────────────────────────────────
+
+  Future<List<dynamic>> getReviews(int restaurantId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/reviews/restaurant/$restaurantId'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return [];
   }
-  return [];
-}
 
-Future<Map<String, dynamic>> getAverageRating(int restaurantId) async {
-  final response = await http.get(
-    Uri.parse('$baseUrl/api/reviews/restaurant/$restaurantId/average'),
-  );
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+  Future<Map<String, dynamic>> getAverageRating(int restaurantId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/api/reviews/restaurant/$restaurantId/average'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return {'average': 0.0, 'count': 0};
   }
-  return {'average': 0.0, 'count': 0};
-}
 
-Future<bool> createReview({
-  required int userId,
-  required int restaurantId,
-  required int rating,
-  String? comment,
-}) async {
-  final response = await http.post(
-    Uri.parse('$baseUrl/api/reviews'),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({
-      "userId": userId,
-      "restaurantId": restaurantId,
-      "rating": rating,
-      "comment": comment,
-    }),
-  );
-  return response.statusCode == 200;
-}
-
-// ── DISCOVERED ────────────────────────────────────────
-Future<Map<String, dynamic>> getDiscovered(int userId) async {
-  final response = await http.get(
-    Uri.parse('$baseUrl/api/discovered/$userId'),
-  );
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  }
-  return {
-    'allRestaurants': [],
-    'discoveredCount': 0,
-    'totalCount': 0,
-    'percentage': 0.0
-  };
-}
-
-// ── MONTHLY OFFER ─────────────────────────────────────
-Future<Map<String, dynamic>?> getCurrentOffer() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/monthlyoffer/current'),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+  Future<bool> createReview({
+    required int userId,
+    required int restaurantId,
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/reviews'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "userId": userId,
+          "restaurantId": restaurantId,
+          "rating": rating,
+          "comment": comment,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
     }
-    return null;
-  } catch (e) {
+  }
+
+  // ── DISCOVERED ────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getDiscovered(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/discovered/$userId'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return {
+      'allRestaurants': [],
+      'discoveredCount': 0,
+      'totalCount': 0,
+      'percentage': 0.0
+    };
+  }
+
+  // ── MONTHLY OFFER ─────────────────────────────────────
+
+  Future<Map<String, dynamic>?> getCurrentOffer() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/monthlyoffer/current'));
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
     return null;
   }
-}
 
-Future<Map<String, dynamic>?> getUserOfferStatus(int userId) async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/monthlyoffer/user/$userId/status'),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+  Future<Map<String, dynamic>?> getUserOfferStatus(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/monthlyoffer/user/$userId/status'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return null;
+  }
+
+  Future<bool> useMonthlyOffer(int userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/monthlyoffer/use'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"userId": userId}),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
     }
+  }
+
+  // ── NOTIFICATIONS ─────────────────────────────────────
+
+  Future<List<dynamic>> getNotifications(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/notifications/$userId'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return [];
+  }
+
+  Future<int> getUnreadCount(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/notifications/$userId/unread'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['count'] as int;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  Future<bool> markNotificationAsRead(int id) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/notifications/$id/read'),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> markAllNotificationsAsRead(int userId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/notifications/readall/$userId'),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteNotification(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/notifications/$id'),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> createNotification({
+    required int userId,
+    required String title,
+    required String message,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/notifications'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "userId": userId,
+          "title": title,
+          "message": message,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════
+  // ORDERS & PAYMENTS  (feature/payments)
+  // ════════════════════════════════════════════════════════
+
+  // ── Reservation arrival check ──────────────────────────
+
+  /// Call on app launch — sends "Your table is ready!" notification
+  /// for reservations starting within the next 15 minutes.
+  Future<void> checkReservationArrivals(int userId) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/api/reservationarrival/check'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({'userId': userId}),
+      );
+    } catch (_) {}
+  }
+
+  // ── Orders ────────────────────────────────────────────
+
+  /// Creates a new order or returns existing one for this reservation.
+  /// Returns {'orderId': int} on success, null on failure.
+  Future<Map<String, dynamic>?> createOrGetOrder({
+    required int userId,
+    required int restaurantId,
+    required int reservationId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/orders'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          'userId': userId,
+          'restaurantId': restaurantId,
+          'reservationId': reservationId,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'orderId': data['id']};
+      }
+    } catch (_) {}
     return null;
-  } catch (e) {
+  }
+
+  Future<Map<String, dynamic>?> getOrderByReservation(
+      int reservationId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/orders/reservation/$reservationId'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
     return null;
   }
-}
 
-Future<bool> useMonthlyOffer(int userId) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/monthlyoffer/use'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"userId": userId}),
-    );
-    return response.statusCode == 200;
-  } catch (e) {
-    return false;
+  Future<Map<String, dynamic>?> getActiveOrderForUser(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/orders/user/$userId/active'),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return null;
   }
-}
 
-// ── NOTIFICATIONS ─────────────────────────────────────
-Future<List<dynamic>> getNotifications(int userId) async {
-  final response = await http.get(
-    Uri.parse('$baseUrl/api/notifications/$userId'),
-  );
-  if (response.statusCode == 200) return jsonDecode(response.body);
-  return [];
-}
-
-Future<int> getUnreadCount(int userId) async {
-  final response = await http.get(
-    Uri.parse('$baseUrl/api/notifications/$userId/unread'),
-  );
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body)['count'] as int;
+  Future<void> addItemToOrder({
+    required int orderId,
+    required int menuItemId,
+    required int quantity,
+  }) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/api/orders/$orderId/items'),
+        headers: {"Content-Type": "application/json"},
+        body:
+            jsonEncode({'menuItemId': menuItemId, 'quantity': quantity}),
+      );
+    } catch (_) {}
   }
-  return 0;
-}
 
-Future<bool> markNotificationAsRead(int id) async {
-  final response = await http.put(
-    Uri.parse('$baseUrl/api/notifications/$id/read'),
-  );
-  return response.statusCode == 200;
-}
+  Future<void> updateOrderItem({
+    required int orderId,
+    required int itemId,
+    required int quantity,
+  }) async {
+    try {
+      await http.put(
+        Uri.parse('$baseUrl/api/orders/$orderId/items/$itemId'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({'quantity': quantity}),
+      );
+    } catch (_) {}
+  }
 
-Future<bool> markAllNotificationsAsRead(int userId) async {
-  final response = await http.put(
-    Uri.parse('$baseUrl/api/notifications/readall/$userId'),
-  );
-  return response.statusCode == 200;
-}
+  Future<void> removeOrderItem(
+      {required int orderId, required int itemId}) async {
+    try {
+      await http.delete(
+          Uri.parse('$baseUrl/api/orders/$orderId/items/$itemId'));
+    } catch (_) {}
+  }
 
-Future<bool> deleteNotification(int id) async {
-  final response = await http.delete(
-    Uri.parse('$baseUrl/api/notifications/$id'),
-  );
-  return response.statusCode == 200;
-}
+  Future<void> updateOrderStatus(
+      {required int orderId, required String status}) async {
+    try {
+      await http.put(
+        Uri.parse('$baseUrl/api/orders/$orderId/status'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({'status': status}),
+      );
+    } catch (_) {}
+  }
 
-Future<bool> createNotification({
-  required int userId,
-  required String title,
-  required String message,
-}) async {
-  final response = await http.post(
-    Uri.parse('$baseUrl/api/notifications'),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({
-      "userId": userId,
-      "title": title,
-      "message": message,
-    }),
-  );
-  return response.statusCode == 200;
-}
+  Future<void> requestBill({
+    required int orderId,
+    required String paymentMethod,
+  }) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/api/orders/$orderId/request-bill'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({'paymentMethod': paymentMethod}),
+      );
+    } catch (_) {}
+  }
 
+  Future<bool> payWithCard({required int orderId}) async {
+    try {
+      final response = await http
+          .post(Uri.parse('$baseUrl/api/orders/$orderId/pay-card'));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 }

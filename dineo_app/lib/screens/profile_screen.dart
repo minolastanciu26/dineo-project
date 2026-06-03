@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'discovered_screen.dart';
 import '../services/api_service.dart';
+import 'payment_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -200,11 +201,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _loadUnreadCount();
                         },
                       ),
-                      _buildProfileOption(
-                          Icons.payment_outlined,
-                          "Payment Methods",
-                          context,
-                          () {}),
+                      _buildProfileOption(Icons.payment_outlined, "Payment Methods", context, () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => const PaymentMethodsScreen(),
+                        ));
+                      }),
                     ],
                   ),
                   const SizedBox(height: 15),

@@ -10,5 +10,7 @@ namespace DineoAPP.Models
         public string PasswordHash { get; set; } = string.Empty;
         public string? ProfilePicture { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string Role { get; set; } = "User"; // "User" | "RestaurantAdmin" | "SuperAdmin"
+        public int? RestaurantId { get; set; }      // null pentru useri normali
     }
 }

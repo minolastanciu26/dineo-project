@@ -59,43 +59,38 @@ namespace DineoAPP.Controllers
         }
 
         // POST: api/reviews
-        [HttpPost]
-        public async Task<IActionResult> CreateReview([FromBody] CreateReviewRequest request)
-        {
-            if (request.Rating < 1 || request.Rating > 5)
-                return BadRequest(new { message = "Rating must be between 1 and 5" });
+[HttpPost]
+public async Task<IActionResult> CreateReview([FromBody] CreateReviewRequest request)
+{
+    if (request.Rating < 1 || request.Rating > 5)
+        return BadRequest(new { message = "Rating must be between 1 and 5" });
 
-            var existing = await _context.Reviews
-                .AnyAsync(r => r.UserId == request.UserId && r.RestaurantId == request.RestaurantId);
+    var review = new Review
+    {
+        UserId = request.UserId,
+        RestaurantId = request.RestaurantId,
+        Rating = request.Rating,
+        Comment = request.Comment,
+        CreatedAt = DateTime.UtcNow
+    };
 
-            if (existing)
-                return BadRequest(new { message = "You have already reviewed this restaurant" });
+    _context.Reviews.Add(review);
+    await _context.SaveChangesAsync();
 
-            var review = new Review
-            {
-                UserId       = request.UserId,
-                RestaurantId = request.RestaurantId,
-                Rating       = request.Rating,
-                Comment      = request.Comment,
-                CreatedAt    = DateTime.UtcNow
-            };
+    // Update restaurant average rating
+    var allReviews = await _context.Reviews
+        .Where(r => r.RestaurantId == request.RestaurantId)
+        .ToListAsync();
 
-            _context.Reviews.Add(review);
-            await _context.SaveChangesAsync();
+    var restaurant = await _context.Restaurants.FindAsync(request.RestaurantId);
+    if (restaurant != null)
+    {
+        restaurant.Rating = Math.Round(allReviews.Average(r => r.Rating), 1);
+        await _context.SaveChangesAsync();
+    }
 
-            var allReviews = await _context.Reviews
-                .Where(r => r.RestaurantId == request.RestaurantId)
-                .ToListAsync();
-
-            var restaurant = await _context.Restaurants.FindAsync(request.RestaurantId);
-            if (restaurant != null)
-            {
-                restaurant.Rating = Math.Round(allReviews.Average(r => r.Rating), 1);
-                await _context.SaveChangesAsync();
-            }
-
-            return Ok(new { message = "Review added successfully!" });
-        }
+    return Ok(new { message = "Review added successfully!" });
+}
 
         // DELETE: api/reviews/{id}
         [HttpDelete("{id}")]

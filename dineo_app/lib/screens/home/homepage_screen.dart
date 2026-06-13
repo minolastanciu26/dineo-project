@@ -14,6 +14,7 @@ import '../notifications_screen.dart';
 import '../map_screen.dart';
 import '../profile_screen.dart';
 import '../menu_screen.dart';
+import '../restaurant_detail_screen.dart';
 
 class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
@@ -28,11 +29,20 @@ class _HomepageScreenState extends State<HomepageScreen> {
   int _userId = 0;
   final TextEditingController _searchController = TextEditingController();
   Timer? _statusTimer;
+  List<dynamic> _recommendations = [];
+  bool _loadingRecommendations = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -47,6 +57,21 @@ class _HomepageScreenState extends State<HomepageScreen> {
       _apiService.checkReservationArrivals(_userId);
       await _loadActiveOrder();
       _startOrderStatusPolling();
+      _loadRecommendations();
+    }
+  }
+
+  Future<void> _loadRecommendations() async {
+    try {
+      final recs = await _apiService.getRecommendations(_userId, take: 8);
+      if (mounted) {
+        setState(() {
+          _recommendations = recs;
+          _loadingRecommendations = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingRecommendations = false);
     }
   }
 
@@ -77,6 +102,85 @@ class _HomepageScreenState extends State<HomepageScreen> {
     } catch (_) {}
   }
 
+  // ── Poll order status every 10 seconds ───────────
+  void _startOrderStatusPolling() {
+    _statusTimer?.cancel();
+    _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (!mounted) return;
+      final cart = Provider.of<CartProvider>(context, listen: false);
+      if (cart.orderId == null) {
+        _statusTimer?.cancel();
+        return;
+      }
+      try {
+        final orderData = await _apiService.getActiveOrderForUser(_userId);
+        if (!mounted) return;
+
+        if (orderData == null) {
+          final oldRestaurantId = cart.restaurantId;
+          final oldRestaurantName = cart.restaurantName;
+          cart.clearCart();
+          _statusTimer?.cancel();
+          if (mounted && oldRestaurantId != null) {
+            _showReviewPrompt(oldRestaurantId, oldRestaurantName ?? '');
+          }
+          return;
+        }
+
+        final newStatus = orderData['status'] as String? ?? 'Pending';
+        if (newStatus != cart.orderStatus) {
+          cart.updateStatus(newStatus);
+          if (newStatus == 'Paid') {
+            final restId = cart.restaurantId;
+            final restName = cart.restaurantName ?? '';
+            cart.clearCart();
+            _statusTimer?.cancel();
+            if (mounted && restId != null) _showReviewPrompt(restId, restName);
+          }
+        }
+      } catch (_) {}
+    });
+  }
+
+  void _showReviewPrompt(int restaurantId, String restaurantName) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          '⭐ How was your meal?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Leave a review for $restaurantName and help others discover it!',
+          style: const TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Later', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB71C1C),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                  context, '/restaurant/$restaurantId/review');
+            },
+            child: const Text('Leave Review',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour >= 5 && hour < 12)  return "Where are you having breakfast?";
@@ -102,16 +206,11 @@ class _HomepageScreenState extends State<HomepageScreen> {
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // ── Gradient background (no red circle) ──────────────
           Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: const Color(0xFF0F0F0F),
-              ),
-            ),
+            child: Container(color: const Color(0xFF0F0F0F)),
           ),
 
-          // ── Scrollable body ───────────────────────────────────
+          // ── Scrollable body ──────────────────────────────
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Consumer<CartProvider>(
@@ -150,7 +249,9 @@ class _HomepageScreenState extends State<HomepageScreen> {
                               ),
                               const SizedBox(width: 10),
                               GestureDetector(
-                                onTap: () => Navigator.pushNamed(context, '/profile'),
+                                onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const ProfileScreen())),
                                 child: Container(
                                   width: 38, height: 38,
                                   decoration: BoxDecoration(
@@ -227,12 +328,13 @@ class _HomepageScreenState extends State<HomepageScreen> {
                                 textInputAction: TextInputAction.search,
                               ),
                             ),
+                            const SizedBox(width: 12),
                           ],
                         ),
                       ),
                     ),
 
-                    // Order card — animat, apare/dispare
+                    // Order progress card
                     AnimatedSize(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOut,
@@ -258,11 +360,24 @@ class _HomepageScreenState extends State<HomepageScreen> {
                           : const SizedBox.shrink(),
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 8),
 
-                    // ── Circular menu area ─────────────────────────────
-                    // Uses LayoutBuilder inside a fixed-ratio container
-                    // so it always looks the same regardless of card presence
+                    // ── For You — personalized recommendations ──────
+                    if (_loadingRecommendations)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                        child: SizedBox(
+                          height: 16,
+                          child: LinearProgressIndicator(
+                            color: Color(0xFFB71C1C),
+                            backgroundColor: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                      )
+                    else if (_recommendations.isNotEmpty)
+                      _buildForYouSection(),
+
+                    const SizedBox(height: 28),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final double areaW = size.width;
@@ -409,8 +524,9 @@ class _HomepageScreenState extends State<HomepageScreen> {
                                 left: 0,
                                 right: 0,
                                 child: GestureDetector(
-                                  onTap: () =>
-                                      Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen())),
+                                  onTap: () => Navigator.push(context,
+                                      MaterialPageRoute(builder: (_) =>
+                                          const MapScreen())),
                                   child: const Column(
                                     children: [
                                       Text("View the map",
@@ -435,7 +551,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
             ),
           ),
 
-          // AI button — mereu vizibil, deasupra scroll
+          // AI button
           Positioned(
             bottom: size.height * 0.04,
             right: size.width * 0.06,
@@ -445,10 +561,117 @@ class _HomepageScreenState extends State<HomepageScreen> {
       ),
     );
   }
+  // ── "For You" recommendations section ────────────
+  Widget _buildForYouSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 10),
+          child: Row(
+            children: const [
+              Text("🍽️", style: TextStyle(fontSize: 17)),
+              SizedBox(width: 8),
+              Text(
+                "For You",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 150,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: _recommendations.length,
+            itemBuilder: (context, index) {
+              final rec = _recommendations[index];
+              return _buildRecommendationCard(rec);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendationCard(dynamic rec) {
+    final name = rec['name'] as String? ?? 'Restaurant';
+    final cuisine = rec['cuisineType'] as String? ?? '';
+    final rating = (rec['rating'] as num?)?.toDouble() ?? 0.0;
+    final id = rec['id'] as int;
+
+    return GestureDetector(
+      onTap: () async {
+        final restaurant = await _apiService.getRestaurantById(id);
+        if (restaurant == null || !mounted) return;
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => RestaurantDetailScreen(restaurant: restaurant),
+        ));
+      },
+      child: Container(
+        width: 170,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB71C1C).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                cuisine.isEmpty ? "Recommended" : cuisine,
+                style: const TextStyle(
+                  color: Color(0xFFB71C1C),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                const SizedBox(width: 4),
+                Text(
+                  rating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
-
-// ── Animated gift button ──────────────────────────────────────────────────
-
 class _PulseGiftButton extends StatefulWidget {
   final VoidCallback onTap;
   const _PulseGiftButton({required this.onTap});
@@ -473,92 +696,11 @@ class _PulseGiftButtonState extends State<_PulseGiftButton>
     );
   }
 
-
-  // Poll order status every 10 seconds — updates card and clears cart when Paid
-  void _startOrderStatusPolling() {
-    _statusTimer?.cancel();
-    _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      final cart = Provider.of<CartProvider>(context, listen: false);
-      if (cart.orderId == null) {
-        _statusTimer?.cancel();
-        return;
-      }
-      try {
-        final orderData = await _apiService.getActiveOrderForUser(_userId);
-        if (!mounted) return;
-
-        if (orderData == null) {
-          // Order is now Paid/Cancelled — clear cart and prompt review
-          final oldRestaurantId = cart.restaurantId;
-          final oldRestaurantName = cart.restaurantName;
-          cart.clearCart();
-          _statusTimer?.cancel();
-
-          // Show review prompt
-          if (mounted && oldRestaurantId != null) {
-            _showReviewPrompt(oldRestaurantId, oldRestaurantName ?? '');
-          }
-          return;
-        }
-
-        final newStatus = orderData['status'] as String? ?? 'Pending';
-        if (newStatus != cart.orderStatus) {
-          cart.updateStatus(newStatus);
-
-          // If just marked Paid
-          if (newStatus == 'Paid') {
-            final restId = cart.restaurantId;
-            final restName = cart.restaurantName ?? '';
-            cart.clearCart();
-            _statusTimer?.cancel();
-            if (mounted) _showReviewPrompt(restId!, restName);
-          }
-        }
-      } catch (_) {}
-    });
-  }
-
-  void _showReviewPrompt(int restaurantId, String restaurantName) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          '⭐ How was your meal?',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Leave a review for $restaurantName and help others discover it!',
-          style: const TextStyle(color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Later',
-                style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFB71C1C),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/restaurant/$restaurantId/review');
-            },
-            child: const Text('Leave Review',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
-  void dispose() { _controller.dispose(); super.dispose(); }
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -587,8 +729,7 @@ class _PulseGiftButtonState extends State<_PulseGiftButton>
   }
 }
 
-// ── Arc painter ───────────────────────────────────────────────────────────
-
+// ── Arc painter ───────────────────────────────────
 class _ArcPainter extends CustomPainter {
   final double radius;
   const _ArcPainter({required this.radius});
@@ -611,15 +752,4 @@ class _ArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class MapViewScreen extends StatelessWidget {
-  const MapViewScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Map")),
-      body: const Center(child: Text("Harta")),
-    );
-  }
 }

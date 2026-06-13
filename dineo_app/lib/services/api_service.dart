@@ -514,6 +514,21 @@ class ApiService {
     return null;
   }
 
+  Future<List<dynamic>> getRecommendations(int userId, {int take = 8}) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/recommendations/$userId?take=$take'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    return [];
+  } catch (e) {
+    return [];
+  }
+}
+
   Future<void> addItemToOrder({
     required int orderId,
     required int menuItemId,

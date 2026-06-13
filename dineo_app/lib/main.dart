@@ -53,18 +53,22 @@ class DineoApp extends StatelessWidget {
         '/restaurants': (context) => const RestaurantsScreen(),
       },
       onGenerateRoute: (settings) {
-        // /restaurant/{id}/review
-        final uri = Uri.parse(settings.name ?? '');
-        if (uri.pathSegments.length == 3 &&
-            uri.pathSegments[0] == 'restaurant' &&
-            uri.pathSegments[2] == 'review') {
-          final restaurantId = int.tryParse(uri.pathSegments[1]) ?? 0;
-          return MaterialPageRoute(
-            builder: (_) => ReviewsScreen(restaurantId: restaurantId),
-          );
-        }
-        return null;
-      },
+  final uri = Uri.parse(settings.name ?? '');
+  if (uri.pathSegments.length == 3 &&
+      uri.pathSegments[0] == 'restaurant' &&
+      uri.pathSegments[2] == 'review') {
+    final restaurantId = int.tryParse(uri.pathSegments[1]) ?? 0;
+    final args = settings.arguments as Map<String, dynamic>?;
+    return MaterialPageRoute(
+      builder: (_) => ReviewsScreen(
+        restaurantId: restaurantId,
+        restaurantName: args?['restaurantName'] as String? ?? '',
+        userId: args?['userId'] as int? ?? 0,
+      ),
+    );
+  }
+  return null;
+},
     );
   }
 }

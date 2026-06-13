@@ -87,8 +87,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               // Clear cart
               final cart = Provider.of<CartProvider>(context, listen: false);
               cart.clearCart();
-              // Go all the way back to homepage
-              Navigator.popUntil(context, (route) => route.isFirst);
+              // Go back to homepage (not the very first route, which could be Welcome/Login)
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/home', (route) => false);
             },
             child: const Text('OK',
                 style: TextStyle(color: Color(0xFFB71C1C))),
@@ -128,10 +129,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final cart = Provider.of<CartProvider>(context, listen: false);
     cart.clearCart();
 
-    // Auto-pop after 3 seconds
+    // Auto-navigate back to homepage after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.popUntil(context, (route) => route.isFirst);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/home', (route) => false);
       }
     });
   }

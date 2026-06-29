@@ -255,7 +255,7 @@ class ApiService {
 
   // ── AI RECOMMEND ──────────────────────────────────────
 
-  Future<String> getRecommendation(String preference) async {
+  Future<Map<String, dynamic>> getRecommendation(String preference) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/recommend'),
@@ -263,8 +263,7 @@ class ApiService {
         body: jsonEncode({"preference": preference}),
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['recommendation'] ?? 'No recommendation found.';
+        return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
         throw Exception("Error: ${response.statusCode}");
       }

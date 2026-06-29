@@ -171,7 +171,13 @@ class _HomepageScreenState extends State<HomepageScreen> {
             onPressed: () {
               Navigator.pop(context);
               Navigator.pushNamed(
-                  context, '/restaurant/$restaurantId/review');
+                context,
+                '/restaurant/$restaurantId/review',
+                arguments: {
+                  'userId': _userId,
+                  'restaurantName': restaurantName,
+                },
+              );
             },
             child: const Text('Leave Review',
                 style: TextStyle(color: Colors.white)),

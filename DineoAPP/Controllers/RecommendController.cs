@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DineoAPP.Data;
-using System.Text;
-using System.Text.Json;
+using DineoAPP.Services;
 
 namespace DineoAPP.Controllers
 {
@@ -11,107 +10,84 @@ namespace DineoAPP.Controllers
     public class RecommendController : ControllerBase
     {
         private readonly DineoContext _context;
-        private readonly IConfiguration _configuration;
-        private readonly HttpClient _httpClient;
 
-        public RecommendController(DineoContext context, IConfiguration configuration)
+        public RecommendController(DineoContext context)
         {
             _context = context;
-            _configuration = configuration;
-            _httpClient = new HttpClient();
         }
 
         [HttpPost]
         public async Task<IActionResult> GetRecommendation([FromBody] RecommendRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Preference))
-                return BadRequest(new { message = "Please describe what you're looking for." });
+                return BadRequest(new { message = "Te rog descrie ce cauți." });
 
-            // Fetch restaurants from DB
-            // For now uses hardcoded list if DB is empty
             var restaurants = await _context.Restaurants.ToListAsync();
+            if (!restaurants.Any())
+                return Ok(new { recommendation = "Nu există restaurante disponibile momentan." });
 
-            string restaurantList;
+            var decors = await _context.FloorDecors.ToListAsync();
+            var menuCategories = await _context.MenuCategories
+                .Include(c => c.MenuItems)
+                .ToListAsync();
 
-            if (restaurants.Any())
+            var tokens = DineoNlpEngine.Tokenize(request.Preference);
+            var intent = DineoNlpEngine.ExtractIntent(tokens);
+
+            var scored = restaurants
+                .Select(r => (
+                    Restaurant: r,
+                    Score: DineoNlpEngine.ScoreRestaurant(
+                        r,
+                        decors.Where(d => d.RestaurantId == r.Id).ToList(),
+                        menuCategories.Where(c => c.RestaurantId == r.Id).ToList(),
+                        tokens,
+                        intent)
+                ))
+                .OrderByDescending(x => x.Score)
+                .ToList();
+
+            // Take top 3 with a positive score; fall back to top 3 by rating if nothing matched
+            var top3 = scored.Where(x => x.Score > 1.3).Take(3).ToList();
+            bool noMatch = !top3.Any();
+            if (noMatch)
+                top3 = scored.Take(3).ToList();
+
+            // Build per-restaurant menu term matches
+            var results = top3.Select(x =>
             {
-                restaurantList = string.Join("\n", restaurants.Select(r =>
-                    $"- {r.Name} | Cuisine: {r.CuisineType} | Rating: {r.Rating} | Description: {r.Description}"));
-            }
-            else
-            {
-                // Fallback hardcoded restaurants for testing
-                restaurantList = @"
-- La Grande Bellezza | Cuisine: Italian | Rating: 4.8 | Description: Romantic Italian restaurant with amazing pasta and wine selection
-- Caru' cu Bere | Cuisine: Romanian | Rating: 4.6 | Description: Historic brewery restaurant in the heart of Bucharest since 1879
-- Vatra | Cuisine: Romanian | Rating: 4.5 | Description: Cozy hearth-inspired restaurant with traditional Romanian dishes
-- Shift | Cuisine: International | Rating: 4.3 | Description: Vibrant fusion restaurant with creative cocktails and seasonal menu
-- Lacrimi si Sfinti | Cuisine: Romanian Fusion | Rating: 4.7 | Description: Avant-garde Romanian fusion by chef Joseph Hadad";
-            }
-
-            // Build prompt for Gemini
-            var prompt = $@"You are DINEO, a smart restaurant recommendation assistant in Bucharest, Romania.
-
-A user is looking for: ""{request.Preference}""
-
-Here are the available restaurants:
-{restaurantList}
-
-Based on the user's preference, recommend the TOP 2-3 best matching restaurants.
-For each restaurant give:
-- The restaurant name (bold with **)
-- A short reason why it matches (1-2 sentences)
-- The rating
-
-Be warm, friendly and concise. Format the response nicely.
-If nothing matches well, suggest the closest options and explain why.";
-
-            // Call Gemini API
-            var apiKey = _configuration["GeminiApiKey"];
-            var geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
-
-            var requestBody = new
-            {
-                contents = new[]
+                var r = x.Restaurant;
+                var terms = new List<string>();
+                foreach (var cat in menuCategories.Where(c => c.RestaurantId == r.Id))
                 {
-                    new
+                    var catNorm = cat.Name?.ToLower() ?? "";
+                    if (tokens.Any(t => t.Length >= 3 && catNorm.Contains(t)))
+                        terms.Add(cat.Name!);
+                    foreach (var item in cat.MenuItems ?? new List<DineoAPP.Models.MenuItem>())
                     {
-                        parts = new[]
-                        {
-                            new { text = prompt }
-                        }
+                        var itemNorm = (item.Name ?? "").ToLower();
+                        if (tokens.Any(t => t.Length >= 3 && itemNorm.Contains(t)))
+                            terms.Add(item.Name!);
                     }
                 }
-            };
 
-            var json = JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            try
-            {
-                var response = await _httpClient.PostAsync(geminiUrl, content);
-                var responseBody = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
+                return new
                 {
-                    return StatusCode(500, new { message = "Gemini API error", details = responseBody });
-                }
+                    id          = r.Id,
+                    name        = r.Name,
+                    rating      = r.Rating,
+                    cuisineType = r.CuisineType,
+                    imageUrl    = r.ImageUrl,
+                    description = r.Description,
+                    reasonText  = DineoNlpEngine.BuildRestaurantReason(r, intent, terms)
+                };
+            }).ToList();
 
-                // Parse Gemini response
-                var geminiResponse = JsonSerializer.Deserialize<JsonElement>(responseBody);
-                var text = geminiResponse
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")[0]
-                    .GetProperty("text")
-                    .GetString();
-
-                return Ok(new { recommendation = text });
-            }
-            catch (Exception ex)
+            return Ok(new
             {
-                return StatusCode(500, new { message = "Failed to get recommendation", error = ex.Message });
-            }
+                intro   = DineoNlpEngine.BuildIntro(noMatch),
+                results
+            });
         }
     }
 

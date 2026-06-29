@@ -126,7 +126,10 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  Image.asset('assets/images/logo.png', height: 30),
+                  GestureDetector(
+                    onTap: () => Navigator.popUntil(context, ModalRoute.withName('/home')),
+                    child: Image.asset('assets/images/logo.png', height: 30),
+                  ),
                   const Spacer(),
                   const Text(
                     "Restaurants",

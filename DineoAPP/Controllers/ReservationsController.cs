@@ -51,7 +51,30 @@ namespace DineoAPP.Controllers
                 .OrderByDescending(r => r.Date)
                 .ToListAsync();
 
-            return Ok(reservations);
+            var reservationIds = reservations.Select(r => r.Id).ToList();
+            var orders = await _context.Orders
+                .Where(o => o.ReservationId != null && reservationIds.Contains(o.ReservationId.Value))
+                .Select(o => new { o.ReservationId, o.Status })
+                .ToListAsync();
+            var orderStatusMap = orders.ToDictionary(o => o.ReservationId!.Value, o => o.Status);
+
+            var result = reservations.Select(r => new
+            {
+                r.Id,
+                r.UserId,
+                r.RestaurantId,
+                r.Restaurant,
+                r.TableId,
+                r.Table,
+                r.Date,
+                r.Time,
+                r.Status,
+                r.CreatedAt,
+                r.GuestCount,
+                OrderStatus = orderStatusMap.TryGetValue(r.Id, out var os) ? os : null,
+            });
+
+            return Ok(result);
         }
 
         // GET: api/reservations/tables/{restaurantId}

@@ -342,29 +342,7 @@ select.form-control option{background:var(--surface2);}
     <div class="login-error" id="ra-error">Incorrect password.</div>
     <div class="form-group" style="text-align:left">
       <label class="form-label">Select Restaurant</label>
-      <select class="form-control" id="ra-restaurant-select">
-        <option value="">— Select your restaurant —</option>
-        <option value="1">Caru cu Bere</option>
-        <option value="2">La Mama</option>
-        <option value="3">Vatra</option>
-        <option value="4">La Grande Belezza</option>
-        <option value="5">Trattoria Il Calcio</option>
-        <option value="6">Sushi One</option>
-        <option value="7">Nobu Bucharest</option>
-        <option value="8">The Burger Lab</option>
-        <option value="9">Hard Rock Cafe</option>
-        <option value="10">Carnivora</option>
-        <option value="11">Negroni</option>
-        <option value="12">Lacrimi și Sfinți</option>
-        <option value="13">Shift Pub</option>
-        <option value="14">Acuarela</option>
-        <option value="15">Beca's Kitchen</option>
-        <option value="16">Hanu lui Manuc</option>
-        <option value="17">Tapas Bar</option>
-        <option value="18">Le Bistro Francez</option>
-        <option value="19">Spice Garden</option>
-        <option value="20">Fratelli Social</option>
-      </select>
+      <select class="form-control" id="ra-restaurant-select"><option value="">— Select your restaurant —</option></select>
     </div>
     <div class="form-group" style="text-align:left">
       <label class="form-label">Password</label>
@@ -816,9 +794,18 @@ function showSuperAdminLogin(){
   document.getElementById('superadmin-login').classList.add('show');
   setTimeout(()=>document.getElementById('sa-password').focus(),100);
 }
-function showRestAdminLogin(){
+async function showRestAdminLogin(){
   document.getElementById('landing').classList.add('hidden');
   document.getElementById('restadmin-login').classList.add('show');
+  const sel = document.getElementById('ra-restaurant-select');
+  sel.innerHTML = '<option value="">— Loading... —</option>';
+  try {
+    const rests = await apiFetch('/api/restaurants');
+    sel.innerHTML = '<option value="">— Select your restaurant —</option>' +
+      rests.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">— Could not load restaurants —</option>';
+  }
 }
 function backToLanding(){
   document.getElementById('landing').classList.remove('hidden');

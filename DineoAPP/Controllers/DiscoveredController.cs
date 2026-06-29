@@ -19,11 +19,9 @@ namespace DineoAPP.Controllers
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetDiscovered(int userId)
         {
-            var discoveredRestaurantIds = await _context.Reservations
-                .Where(r => r.UserId == userId &&
-                            r.Status == "Confirmed" &&
-                            r.Date < DateTime.UtcNow)
-                .Select(r => r.RestaurantId)
+            var discoveredRestaurantIds = await _context.Orders
+                .Where(o => o.UserId == userId && o.Status == "Paid" && o.ReservationId != null)
+                .Select(o => o.RestaurantId)
                 .Distinct()
                 .ToListAsync();
 

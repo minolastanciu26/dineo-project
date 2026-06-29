@@ -5,6 +5,7 @@ import 'package:dineo_app/screens/my_reservations_screen.dart';
 import 'package:dineo_app/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 import 'discovered_screen.dart';
 import '../services/api_service.dart';
 import 'payment_screen.dart';
@@ -20,6 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _fullName = '';
   int _userId = 0;
   int _unreadCount = 0;
+  String? _profileImagePath;
   final ApiService _apiService = ApiService();
 
   @override
@@ -35,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final lastName = prefs.getString('lastName') ?? '';
       _fullName = '$firstName $lastName'.trim();
       _userId = prefs.getInt('userId') ?? 0;
+      _profileImagePath = prefs.getString('profileImagePath');
     });
     _loadUnreadCount();
   }
@@ -62,7 +65,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 10),
-                Image.asset('assets/images/logo.png', height: 35),
+                GestureDetector(
+                  onTap: () => Navigator.popUntil(context, ModalRoute.withName('/home')),
+                  child: Image.asset('assets/images/logo.png', height: 35),
+                ),
                 const Spacer(),
                 // Clopoțel cu badge
                 GestureDetector(
@@ -124,11 +130,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 50,
-                    backgroundColor: Color(0xFF332020),
-                    child: Icon(Icons.person_outline,
-                        size: 55, color: Color(0xFFB71C1C)),
+                    backgroundColor: const Color(0xFF332020),
+                    backgroundImage: _profileImagePath != null
+                        ? FileImage(File(_profileImagePath!))
+                        : null,
+                    child: _profileImagePath == null
+                        ? const Icon(Icons.person_outline,
+                            size: 55, color: Color(0xFFB71C1C))
+                        : null,
                   ),
                   const SizedBox(height: 15),
                   Text(
@@ -153,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           context,
                           MaterialPageRoute(
                               builder: (_) => const PersonalInfoScreen()),
-                        ),
+                        ).then((_) => _loadUserData()),
                       ),
                       _buildProfileOption(
                         Icons.favorite_border,

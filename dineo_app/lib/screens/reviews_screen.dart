@@ -315,17 +315,23 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
     setState(() => _isSubmitting = false);
 
     if (success) {
-      widget.onReviewSubmitted();
       if (mounted) Navigator.pop(context);
+      widget.onReviewSubmitted();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Review submitted successfully!")),
+          const SnackBar(
+            content: Text("Review submitted!"),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
         );
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("You have already reviewed this restaurant")),
+          const SnackBar(
+            content: Text("Failed to submit review. Try again."),
+            backgroundColor: Color(0xFFB71C1C),
+          ),
         );
       }
     }

@@ -193,7 +193,10 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 10),
-                  Image.asset('assets/images/logo.png', height: 30),
+                  GestureDetector(
+                    onTap: () => Navigator.popUntil(context, ModalRoute.withName('/home')),
+                    child: Image.asset('assets/images/logo.png', height: 30),
+                  ),
                   const Spacer(),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -593,33 +596,97 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
 
             const SizedBox(height: 12),
 
-            // ── "Order Food" button — only for Confirmed ──────────
+            // ── "Order Food" — time-gated for Confirmed reservations ──
             if (isConfirmed) ...[
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.restaurant_menu,
-                      color: Colors.white, size: 16),
-                  label: const Text(
-                    "Order Food",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+              Builder(builder: (_) {
+                final orderStatus = r['orderStatus'] as String?;
+                if (orderStatus == 'Paid') {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_outline, color: Colors.grey, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "Order completed",
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      ],
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB71C1C),
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  );
+                }
+                final dateParts = r['date'].toString().split('T')[0].split('-');
+                final timeParts = r['time'].toString().split(':');
+                final start = DateTime(
+                  int.parse(dateParts[0]),
+                  int.parse(dateParts[1]),
+                  int.parse(dateParts[2]),
+                  int.parse(timeParts[0]),
+                  int.parse(timeParts[1]),
+                );
+                final end = start.add(const Duration(hours: 2));
+                final now = DateTime.now();
+
+                if (now.isBefore(start)) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.schedule, color: Colors.orange, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "Reservation hasn't started yet",
+                          style: TextStyle(color: Colors.orange, fontSize: 13),
+                        ),
+                      ],
                     ),
-                    elevation: 0,
-                  ),
-                  onPressed: () => _openMenuForOrder(r),
-                ),
-              ),
-              const SizedBox(height: 8),
+                  );
+                } else if (now.isAfter(end)) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_outline, color: Colors.grey, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "Reservation ended",
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.restaurant_menu,
+                              color: Colors.white, size: 16),
+                          label: const Text(
+                            "Order Food",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFB71C1C),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: () => _openMenuForOrder(r),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  );
+                }
+              }),
             ],
 
             // ── "Add to Google Calendar" button ───────────────────

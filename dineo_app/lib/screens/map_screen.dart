@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/restaurant.dart';
 import '../services/api_service.dart';
+import 'restaurant_detail_screen.dart';
 
 class MapScreen extends StatefulWidget {
   final double? targetLat;
@@ -400,7 +401,12 @@ class _MapScreenState extends State<MapScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RestaurantDetailScreen(restaurant: r),
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB71C1C),
                 shape: RoundedRectangleBorder(

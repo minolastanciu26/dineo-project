@@ -59,7 +59,10 @@ class _FavouriteRestaurantsScreenState extends State<FavouriteRestaurantsScreen>
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 10),
-                  Image.asset('assets/images/logo.png', height: 30),
+                  GestureDetector(
+                    onTap: () => Navigator.popUntil(context, ModalRoute.withName('/home')),
+                    child: Image.asset('assets/images/logo.png', height: 30),
+                  ),
                   const SizedBox(width: 15),
                   const Text(
                     "My Favourites",
